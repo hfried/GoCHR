@@ -197,10 +197,74 @@ func tAddStringGoals(t *testing.T, goals string) bool {
 }
 
 func checkResult(t *testing.T, chr, bi string) {
-	if chr != chr2string() {
-		t.Error(fmt.Sprintf(" exspected chr result: '%s' \n !=computed chr result: '%s'", chr, chr2string()))
+
+	chrList, ok := ParseGoalString(chr)
+	if !ok {
+		t.Error(" Scan exspected chr result failed: %s\n", chrList)
 	}
-	if bi != bi2string() {
-		t.Error(fmt.Sprintf(" exspected BI result: '%s' \n !=computed BI result: '%s'", bi, bi2string()))
+	compCHR := chr2List()
+	if !EqualVarName(chrList, compCHR) {
+		t.Error(fmt.Sprintf(" exspected chr result: '%s' \n !=computed chr result: '%s'", chrList, compCHR))
+	}
+
+	biList, ok := ParseBIString(bi)
+	if !ok {
+		t.Error(" Scan exspected bi result failed: %s\n", biList)
+	}
+	compBI := bi2List()
+
+	if !EqualVarName(biList, compBI) {
+		t.Error(fmt.Sprintf(" exspected BI result: '%s' \n !=computed BI result: '%s'", biList, compBI))
+	}
+}
+
+func EqualVarName(t1, t2 Term) bool {
+	if t1.Type() != t2.Type() {
+		return false
+	}
+	switch t1.Type() {
+	case AtomType, BoolType, IntType, FloatType, StringType:
+		return t1 == t2
+	case CompoundType:
+		//		fmt.Printf("## t1-Functor %s(%d), t2-Functor %s(%d)\n ", t1.(Compound).Functor, t1.(Compound).Arity(),
+		//			t2.(Compound).Functor, t2.(Compound).Arity())
+
+		if t1.(Compound).Functor != t2.(Compound).Functor ||
+			t1.(Compound).Arity() != t2.(Compound).Arity() {
+			//		if t1.(Compound).Prio != 3 && t2.(Compound).Prio != 3 { return false }
+			// 	return EqualCompare(t1.(Compound).Functor, )
+			//			fmt.Printf("## ## Functor!=Functor %v, Arity != Arity %v\n", t1.(Compound).Functor != t2.(Compound).Functor,
+			//				t1.(Compound).Arity() != t2.(Compound).Arity())
+			return false
+		}
+		for i, _ := range t1.(Compound).Args {
+			if !EqualVarName(t1.(Compound).Args[i], t2.(Compound).Args[i]) {
+				//				fmt.Printf("### Arg[%v]: %s != Arg[%v]: %s \n", i, t1.(Compound).Args[i], i, t2.(Compound).Args[i])
+				return false
+			}
+		}
+		return true
+	case ListType:
+		if len(t1.(List)) != len(t2.(List)) {
+			return false
+		}
+		for i, _ := range t1.(List) {
+			if !EqualVarName(t1.(List)[i], t2.(List)[i]) {
+				return false
+			}
+		}
+		return true
+	case VariableType:
+		if t1.String() == t2.String() {
+			//		if t1.(Variable).Name == t2.(Variable).Name &&
+			//			(t1.(Variable).index.Cmp(t2.(Variable).index) == 0 ||
+			//				(t1.(Variable).index == nil && t2.(Variable).index == nil)) {
+			return true
+		}
+		fmt.Printf("## ## ## t1-name: %s, t2-name: %s\n",
+			t1.(Variable).Name, t2.(Variable).Name)
+		return false
+	default:
+		return false
 	}
 }

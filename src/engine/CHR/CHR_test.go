@@ -105,23 +105,20 @@ func TestCHR12(t *testing.T) {
 	}
 }
 
-/*
-func TestCHRnn(t *testing.T) {
-	ok := tAtt(t, "[p(2.0,4.0),p(\"Hallo\", a),p(true, b),p(7,a),p(false, a),p(34, b),p(17.3,b),p(\"Welt\",b)]",
-	"p(true,a)", "[p(2.0,4.0),p(\"Hallo\", a),p(true, b),p(7,a),p(false, a),p(34, b),p(17.3,b),p(\"Welt\",b)]")
-	if ok != true {
-		t.Errorf("TestStorenn failed\n")
-	}
-}
-*/
-/*
-func TestCHRxx(t *testing.T) {
-	ok := tAtt(t, "[p(a, b), p(b, a), q(a,a), p(b, b)]", "p(c,A)", "[]")
-	if ok != true {
-		t.Errorf("TestStore02 failed\n")
-	}
-}
-*/
+//func TestCHRnn(t *testing.T) {
+//	ok := tAtt(t, "[p(2.0,4.0),p(\"Hallo\", a),p(true, b),p(7,a),p(false, a),p(34, b),p(17.3,b),p(\"Welt\",b)]",
+//	"p(true,a)", "[p(2.0,4.0),p(\"Hallo\", a),p(true, b),p(7,a),p(false, a),p(34, b),p(17.3,b),p(\"Welt\",b)]")
+//	if ok != true {
+//		t.Errorf("TestStorenn failed\n")
+//	}
+//}
+
+//func TestCHRxx(t *testing.T) {
+//	ok := tAtt(t, "[p(a, b), p(b, a), q(a,a), p(b, b)]", "p(c,A)", "[]")
+//	if ok != true {
+//		t.Errorf("TestStore02 failed\n")
+//	}
+//}
 
 func TestCHRRule01(t *testing.T) {
 	InitStore()
@@ -156,7 +153,7 @@ func TestCHRRule01a(t *testing.T) {
 
 	CHRsolver()
 
-	checkResult(t, "[prime(19), prime(17), prime(13), prime(11), prime(7), prime(5), prime(3), prime(2)]", "[]")
+	checkResult(t, "prime(19), prime(17), prime(13), prime(11), prime(7), prime(5), prime(3), prime(2)", "")
 	CHRtrace = 1
 	printCHRStore()
 
@@ -196,7 +193,7 @@ func TestCHRRule02a(t *testing.T) {
 
 	CHRsolver()
 
-	checkResult(t, "[gcd(11)]", "[]")
+	checkResult(t, "gcd(11)", "")
 	CHRtrace = 1
 	printCHRStore()
 }
@@ -214,7 +211,7 @@ func TestCHRRule02b(t *testing.T) {
 
 	CHRsolver()
 
-	checkResult(t, "[gcd(11)]", "[]")
+	checkResult(t, "gcd(11)", "")
 	CHRtrace = 1
 	printCHRStore()
 }
@@ -232,7 +229,7 @@ func TestCHRRule02c(t *testing.T) {
 
 	CHRsolver()
 
-	checkResult(t, "[gcd(11)]", "[]")
+	checkResult(t, "gcd(11)", "")
 	CHRtrace = 1
 	printCHRStore()
 }
@@ -249,8 +246,8 @@ func TestCHRRule02d(t *testing.T) {
 	}
 
 	CHRsolver()
-
-	checkResult(t, "[gcd(3)]", "[L7056:=15, L7058:=3, L7060:=9, L7062:=6, L7064:=3, L7066:=0]")
+	// checkResult(t, "gcd(3)", "L2:=15, L4:=3, L6:=9, L8:=6, L10:=3, L12:=0")
+	checkResult(t, "gcd(3)", "L7056:=15, L7058:=3, L7060:=9, L7062:=6, L7064:=3, L7066:=0")
 	CHRtrace = 1
 	printCHRStore()
 }
@@ -288,7 +285,7 @@ func TestCHRRule03a(t *testing.T) {
 
 	CHRsolver()
 
-	checkResult(t, "[gcd(11)]", "[]")
+	checkResult(t, "gcd(11)", "")
 	CHRtrace = 1
 	printCHRStore()
 }
@@ -326,7 +323,7 @@ func TestCHRRule04a(t *testing.T) {
 
 	CHRsolver()
 
-	checkResult(t, "[upto(10), fib(0,1), fib(1,1), fib(2,2), fib(3,3), fib(4,5), fib(5,8), fib(6,13), fib(7,21), fib(8,34), fib(9,55), fib(10,89)]", "[]")
+	checkResult(t, "upto(10), fib(0,1), fib(1,1), fib(2,2), fib(3,3), fib(4,5), fib(5,8), fib(6,13), fib(7,21), fib(8,34), fib(9,55), fib(10,89)", "")
 
 	CHRtrace = 1
 	printCHRStore()
@@ -383,7 +380,7 @@ func TestCHRRule05a(t *testing.T) {
 
 	CHRsolver()
 
-	checkResult(t, "[]", "[A==C, B==C]")
+	checkResult(t, "", "A==C, B==C")
 	CHRtrace = 1
 	printCHRStore()
 }
@@ -405,7 +402,7 @@ func TestCHRRule06(t *testing.T) {
 
 	CHRsolver()
 
-	checkResult(t, "[source(berlin), dist(berlin,0), dist(wolfsburg,230), dist(jena,259), dist(erfurt,314), dist(giessen,519), dist(hannover,319), dist(bielefeld,427), dist(köln,621), dist(aachen,706)]", "[]")
+	checkResult(t, "source(berlin), dist(berlin,0), dist(wolfsburg,230), dist(jena,259), dist(erfurt,314), dist(giessen,519), dist(hannover,319), dist(bielefeld,427), dist(köln,621), dist(aachen,706)", "")
 	CHRtrace = 1
 	printCHRStore()
 }
@@ -428,7 +425,7 @@ func TestCHRRule07(t *testing.T) {
 
 	CHRsolver()
 
-	checkResult(t, "[source(berlin), dist(berlin,[berlin],0), dist(wolfsburg,[wolfsburg, berlin],230), dist(jena,[jena, berlin],259), dist(erfurt,[erfurt, jena, berlin],314), dist(giessen,[giessen, erfurt, jena, berlin],519), dist(hannover,[hannover, wolfsburg, berlin],319), dist(bielefeld,[bielefeld, hannover, wolfsburg, berlin],427), dist(köln,[köln, bielefeld, hannover, wolfsburg, berlin],621), dist(aachen,[aachen, köln, bielefeld, hannover, wolfsburg, berlin],706)]", "[]")
+	checkResult(t, "source(berlin), dist(berlin,[berlin],0), dist(wolfsburg,[wolfsburg, berlin],230), dist(jena,[jena, berlin],259), dist(erfurt,[erfurt, jena, berlin],314), dist(giessen,[giessen, erfurt, jena, berlin],519), dist(hannover,[hannover, wolfsburg, berlin],319), dist(bielefeld,[bielefeld, hannover, wolfsburg, berlin],427), dist(köln,[köln, bielefeld, hannover, wolfsburg, berlin],621), dist(aachen,[aachen, köln, bielefeld, hannover, wolfsburg, berlin],706)", "")
 	CHRtrace = 1
 	printCHRStore()
 }
@@ -451,7 +448,7 @@ func TestCHRRule08(t *testing.T) {
 
 	CHRsolver()
 
-	checkResult(t, "[source(berlin), dist([berlin],0), dist([wolfsburg, berlin],230), dist([jena, berlin],259), dist([erfurt, jena, berlin],314), dist([giessen, erfurt, jena, berlin],519), dist([hannover, wolfsburg, berlin],319), dist([bielefeld, hannover, wolfsburg, berlin],427), dist([köln, bielefeld, hannover, wolfsburg, berlin],621), dist([aachen, köln, bielefeld, hannover, wolfsburg, berlin],706)]", "[]")
+	checkResult(t, "source(berlin), dist([berlin],0), dist([wolfsburg, berlin],230), dist([jena, berlin],259), dist([erfurt, jena, berlin],314), dist([giessen, erfurt, jena, berlin],519), dist([hannover, wolfsburg, berlin],319), dist([bielefeld, hannover, wolfsburg, berlin],427), dist([köln, bielefeld, hannover, wolfsburg, berlin],621), dist([aachen, köln, bielefeld, hannover, wolfsburg, berlin],706)", "")
 	CHRtrace = 1
 	printCHRStore()
 }
@@ -474,7 +471,7 @@ func TestCHRRule09(t *testing.T) {
 
 	CHRsolver()
 
-	checkResult(t, "[source(berlin), dist([berlin],0), dist([wolfsburg, berlin],230), dist([jena, berlin],259), dist([erfurt, jena, berlin],314), dist([giessen, erfurt, jena, berlin],519), dist([hannover, wolfsburg, berlin],319), dist([bielefeld, hannover, wolfsburg, berlin],427), dist([köln, bielefeld, hannover, wolfsburg, berlin],621), dist([aachen, köln, bielefeld, hannover, wolfsburg, berlin],706)]", "[]")
+	checkResult(t, "source(berlin), dist([berlin],0), dist([wolfsburg, berlin],230), dist([jena, berlin],259), dist([erfurt, jena, berlin],314), dist([giessen, erfurt, jena, berlin],519), dist([hannover, wolfsburg, berlin],319), dist([bielefeld, hannover, wolfsburg, berlin],427), dist([köln, bielefeld, hannover, wolfsburg, berlin],621), dist([aachen, köln, bielefeld, hannover, wolfsburg, berlin],706)", "")
 	CHRtrace = 1
 	printCHRStore()
 }

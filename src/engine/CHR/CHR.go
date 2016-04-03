@@ -449,7 +449,7 @@ func traceUnifyDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env
 	// begin trace
 	first := true
 	for _, c := range chrList {
-		if !c.IsActive {
+		if !c.IsDeleted {
 			if first {
 				Trace(3, c)
 				first = false
@@ -634,20 +634,20 @@ func traceUnifyDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env
 
 // mark chr - no other head-predicate can match that constraint
 func markCHR(chr *Compound) bool {
-	if chr.IsActive {
+	if chr.IsDeleted {
 		return false
 	}
-	chr.IsActive = true
+	chr.IsDeleted = true
 	return true
 }
 
 func traceMarkCHRAndUnifyDelHead(id int, head, chr *Compound, env Bindings) (env2 Bindings, ok bool, m bool) {
 	// mark and unmark chr
-	if chr.IsActive {
+	if chr.IsDeleted {
 		return env, false, false
 	}
 	// TraceHeadln(3, 3, "     *** mark del %v, ID: %v\n", chr, chr.Id)
-	chr.IsActive = true
+	chr.IsDeleted = true
 	env2, ok = Unify(*head, *chr, env)
 	if ok {
 		TraceHead(3, 3, "Unify head ", head, " with CHR ", chr, " (Id: ", chr.Id, ") is ", ok, " (Binding: ")
@@ -663,21 +663,21 @@ func traceMarkCHRAndUnifyDelHead(id int, head, chr *Compound, env Bindings) (env
 
 func markCHRAndUnifyDelHead(id int, head, chr *Compound, env Bindings) (env2 Bindings, ok bool, m bool) {
 	// mark and unmark chr
-	if chr.IsActive {
+	if chr.IsDeleted {
 		return env, false, false
 	}
-	chr.IsActive = true
+	chr.IsDeleted = true
 	env2, ok = Unify(*head, *chr, env)
 	return env2, ok, true
 }
 
 func unmarkDelCHR(chr *Compound) {
-	chr.IsActive = false
+	chr.IsDeleted = false
 	return
 }
 
 func traceUnmarkDelCHR(chr *Compound) {
-	chr.IsActive = false
+	chr.IsDeleted = false
 	TraceHeadln(4, 3, "unmark del ", chr, ", ID: ", chr.Id)
 	return
 }
@@ -685,11 +685,11 @@ func traceUnmarkDelCHR(chr *Compound) {
 func traceMarkCHRAndUnifyKeepHead(id int, head, chr *Compound, env Bindings) (env2 Bindings, ok bool, m bool) {
 	// mark and unmark chr
 
-	if chr.IsActive {
+	if chr.IsDeleted {
 		return env, false, false
 	}
 	// TraceHeadln(3, 3, "mark keep ",chr,", ID: ",chr.Id )
-	chr.IsActive = true
+	chr.IsDeleted = true
 	env2, ok = Unify(*head, *chr, env)
 	if ok {
 		TraceHead(3, 3, "Unify head ", head, " with CHR ", chr, " (Id: ", chr.Id, ") is ", ok, " (Binding: ")
@@ -706,22 +706,22 @@ func traceMarkCHRAndUnifyKeepHead(id int, head, chr *Compound, env Bindings) (en
 func markCHRAndUnifyKeepHead(id int, head, chr *Compound, env Bindings) (env2 Bindings, ok bool, m bool) {
 	// mark and unmark chr
 
-	if chr.IsActive {
+	if chr.IsDeleted {
 		return env, false, false
 	}
-	chr.IsActive = true
+	chr.IsDeleted = true
 	env2, ok = Unify(*head, *chr, env)
 	return env2, ok, true
 }
 
 func traceUnmarkKeepCHR(chr *Compound) {
-	chr.IsActive = false
+	chr.IsDeleted = false
 	TraceHeadln(4, 3, "unmark keep ", chr, ", ID: ", chr.Id)
 	return
 }
 
 func unmarkKeepCHR(chr *Compound) {
-	chr.IsActive = false
+	chr.IsDeleted = false
 	return
 }
 
@@ -1182,11 +1182,11 @@ func substituteStores(biEnv Bindings) {
 	newCHR := []Compound{}
 	for _, aChr := range CHRstore {
 		for _, con := range aChr.varArg {
-			if !con.IsActive {
+			if !con.IsDeleted {
 				con1, ok := SubstituteBiEnv(*con, biEnv)
 				if ok && con1.Type() == CompoundType {
 					newCHR = append(newCHR, con1.(Compound))
-					con.IsActive = true
+					con.IsDeleted = true
 				}
 			}
 		}
@@ -1198,11 +1198,11 @@ func substituteStores(biEnv Bindings) {
 		newBI := []Compound{}
 		for _, aChr := range BuiltInStore {
 			for _, con := range aChr.varArg {
-				if !con.IsActive {
+				if !con.IsDeleted {
 					con1, ok := SubstituteBiEnv(*con, biEnv)
 					if ok && con1.Type() == CompoundType {
 						newBI = append(newBI, con1.(Compound))
-						con.IsActive = true
+						con.IsDeleted = true
 					}
 				}
 			}

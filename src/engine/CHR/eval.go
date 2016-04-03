@@ -186,7 +186,7 @@ func evalNot(t1 Term, a1 Term, typ1 Type) Term {
 			if newc {
 				c.Id = a.Id
 				c.Prio = a.Prio
-				c.IsActive = a.IsActive
+				c.IsDeleted = a.IsDeleted
 				return c
 			}
 		}
@@ -531,7 +531,7 @@ func evalGt(t1 Term, a1 Term, typ1 Type, a2 Term, typ2 Type) Term {
 		}
 	}
 	t := t1.(Compound)
-	c := Compound{Functor: "<", Id: t.Id, Prio: t.Prio, IsActive: t.IsActive, Args: []Term{a2, a1}}
+	c := Compound{Functor: "<", Id: t.Id, Prio: t.Prio, IsDeleted: t.IsDeleted, Args: []Term{a2, a1}}
 	return c
 }
 
@@ -558,7 +558,7 @@ func evalGtEq(t1 Term, a1 Term, typ1 Type, a2 Term, typ2 Type) Term {
 		}
 	}
 	t := t1.(Compound)
-	c := Compound{Functor: "<=", Id: t.Id, Prio: t.Prio, IsActive: t.IsActive, Args: []Term{a2, a1}}
+	c := Compound{Functor: "<=", Id: t.Id, Prio: t.Prio, IsDeleted: t.IsDeleted, Args: []Term{a2, a1}}
 	return c
 }
 

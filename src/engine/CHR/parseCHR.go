@@ -622,7 +622,7 @@ func printCHRStore() {
 	first := true
 	for _, aChr := range CHRstore {
 		for _, con := range aChr.varArg {
-			if !con.IsActive {
+			if !con.IsDeleted {
 				if first {
 					TraceHead(1, 0, "CHR-Store: [", con.String())
 					first = false
@@ -641,7 +641,7 @@ func printCHRStore() {
 	first = true
 	for _, aChr := range BuiltInStore {
 		for _, con := range aChr.varArg {
-			if !con.IsActive {
+			if !con.IsDeleted {
 				if first {
 					TraceHead(1, 0, "Built-In Store: [", con.String())
 					first = false
@@ -659,11 +659,35 @@ func printCHRStore() {
 
 }
 
+func chr2List() (l List) {
+	l = List{}
+	for _, aChr := range CHRstore {
+		for _, con := range aChr.varArg {
+			if !con.IsDeleted {
+				l = append(l, *con)
+			}
+		}
+	}
+	return
+}
+
+func bi2List() (l List) {
+	l = List{}
+	for _, aChr := range BuiltInStore {
+		for _, con := range aChr.varArg {
+			if !con.IsDeleted {
+				l = append(l, *con)
+			}
+		}
+	}
+	return
+}
+
 func chr2string() (str string) {
 	first := true
 	for _, aChr := range CHRstore {
 		for _, con := range aChr.varArg {
-			if !con.IsActive {
+			if !con.IsDeleted {
 				if first {
 					str = "[" + con.String()
 					first = false
@@ -685,7 +709,7 @@ func bi2string() (str string) {
 	first := true
 	for _, aChr := range BuiltInStore {
 		for _, con := range aChr.varArg {
-			if !con.IsActive {
+			if !con.IsDeleted {
 				if first {
 					str = "[" + con.String()
 					first = false

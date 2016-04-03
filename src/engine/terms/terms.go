@@ -53,7 +53,7 @@ type Compound struct {
 	EMap              *EnvMap
 	occurVars         Vars
 	identifyOccurVars bool
-	IsActive          bool
+	IsDeleted         bool
 	Args              []Term
 }
 
@@ -96,7 +96,7 @@ func CopyCompound(c Compound) (c1 Compound) {
 		EMap:              c.EMap,
 		occurVars:         c.occurVars,
 		identifyOccurVars: c.identifyOccurVars,
-		IsActive:          c.IsActive,
+		IsDeleted:         c.IsDeleted,
 		Args:              []Term{}}
 	args := []Term{}
 	for _, a := range c.Args {
@@ -401,14 +401,20 @@ func Equal(t1, t2 Term) bool {
 	case AtomType, BoolType, IntType, FloatType, StringType:
 		return t1 == t2
 	case CompoundType:
+		//		fmt.Printf("## t1-Functor %s(%d), t2-Functor %s(%d)\n ", t1.(Compound).Functor, t1.(Compound).Arity(),
+		//			t2.(Compound).Functor, t2.(Compound).Arity())
+
 		if t1.(Compound).Functor != t2.(Compound).Functor ||
 			t1.(Compound).Arity() != t2.(Compound).Arity() {
 			//		if t1.(Compound).Prio != 3 && t2.(Compound).Prio != 3 { return false }
 			// 	return EqualCompare(t1.(Compound).Functor, )
+			//			fmt.Printf("## ## Functor!=Functor %v, Arity != Arity %v\n", t1.(Compound).Functor != t2.(Compound).Functor,
+			//				t1.(Compound).Arity() != t2.(Compound).Arity())
 			return false
 		}
 		for i, _ := range t1.(Compound).Args {
 			if !Equal(t1.(Compound).Args[i], t2.(Compound).Args[i]) {
+				//				fmt.Printf("### Arg[%v]: %s != Arg[%v]: %s \n", i, t1.(Compound).Args[i], i, t2.(Compound).Args[i])
 				return false
 			}
 		}
@@ -425,9 +431,12 @@ func Equal(t1, t2 Term) bool {
 		return true
 	case VariableType:
 		if t1.(Variable).Name == t2.(Variable).Name &&
-			t1.(Variable).index == t2.(Variable).index {
+			(t1.(Variable).index.Cmp(t2.(Variable).index) == 0 ||
+				(t1.(Variable).index == nil && t2.(Variable).index == nil)) {
 			return true
 		}
+		//		fmt.Printf("## ## ## t1-name: %s, t2-name: %s, t1-idx: %v, t2-idx: %v\n",
+		//			t1.(Variable).Name, t2.(Variable).Name, t1.(Variable).index, t2.(Variable).index)
 		return false
 	default:
 		return false
