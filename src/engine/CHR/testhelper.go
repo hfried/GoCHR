@@ -204,7 +204,27 @@ func checkResult(t *testing.T, chr, bi string) {
 	}
 	compCHR := chr2List()
 	if !EqualVarName(chrList, compCHR) {
-		t.Error(fmt.Sprintf(" exspected chr result: '%s' \n !=computed chr result: '%s'", chrList, compCHR))
+		if chrList.Type() != ListType {
+			t.Error(fmt.Sprintf(" exspected chr result (no List): '%s' \n !=computed chr result: '%s'", chrList, compCHR))
+		}
+		lenCompCHR := len(compCHR)
+		if lenCompCHR != len(chrList.(List)) || lenCompCHR == 0 {
+			t.Error(fmt.Sprintf(" exspected chr result: '%s' \n != len computed chr result: '%s'", chrList, compCHR))
+		}
+		vec := make([]bool, lenCompCHR)
+		for _, c := range compCHR {
+			found := false
+			for i, e := range chrList.(List) {
+				if !vec[i] && EqualVarName(c, e) {
+					vec[i] = true
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Error(fmt.Sprintf(" exspected chr result: '%s' \n != len computed chr result: '%s'", chrList, compCHR))
+			}
+		}
 	}
 
 	biList, ok := ParseBIString(bi)
@@ -214,7 +234,28 @@ func checkResult(t *testing.T, chr, bi string) {
 	compBI := bi2List()
 
 	if !EqualVarName(biList, compBI) {
-		t.Error(fmt.Sprintf(" exspected BI result: '%s' \n !=computed BI result: '%s'", biList, compBI))
+		if biList.Type() != ListType {
+			t.Error(fmt.Sprintf(" exspected BI result(no List type): '%s' \n !=computed BI result: '%s'", biList, compBI))
+		}
+		lenCompBI := len(compBI)
+		if lenCompBI != len(biList.(List)) || lenCompBI == 0 {
+			t.Error(fmt.Sprintf(" exspected BI result: '%s' \n != len computed BI result: '%s'", biList, compBI))
+		}
+		vec := make([]bool, lenCompBI)
+		for _, c := range compBI {
+			found := false
+			for i, e := range biList.(List) {
+				if !vec[i] && EqualVarName(c, e) {
+					vec[i] = true
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Error(fmt.Sprintf(" exspected BI result: '%s' \n !=computed BI result: '%s'", biList, compBI))
+			}
+		}
+
 	}
 }
 
