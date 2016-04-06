@@ -376,7 +376,10 @@ func (t Compound) Arity() int {
 // stream of pointers to big integers for renaming variables
 var Counter <-chan *big.Int
 
-func init() {
+// var Counter <-chan *big.Int
+
+// func init() {
+func InitRenamingVariables() {
 	c := make(chan *big.Int)
 	i := big.NewInt(1)
 	one := big.NewInt(1)
@@ -388,6 +391,19 @@ func init() {
 	}()
 	Counter = c
 }
+
+//func InitRenamingVariables() {
+//		c := make(chan *big.Int)
+//		i := big.NewInt(1)
+//		one := big.NewInt(1)
+//		go func() {
+//			for {
+//				c <- i
+//				i = new(big.Int).Add(i, one)
+//			}
+//		}()
+//		counter2 = c
+//}
 
 func (v Variable) Rename() Variable {
 	return Variable{Name: v.Name, index: <-Counter}

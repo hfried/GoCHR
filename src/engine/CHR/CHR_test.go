@@ -152,7 +152,10 @@ func TestCHRRule01a(t *testing.T) {
 	}
 
 	CHRsolver()
-
+	//	CHRtrace = 1
+	//	printCHRStore()
+	//	CHRtrace = 0
+	//	tNewQuery(t, "prime(20)")
 	checkResult(t, "prime(19), prime(17), prime(13), prime(11), prime(7), prime(5), prime(3), prime(2)", "")
 	CHRtrace = 1
 	printCHRStore()
@@ -246,8 +249,7 @@ func TestCHRRule02d(t *testing.T) {
 	}
 
 	CHRsolver()
-	// checkResult(t, "gcd(3)", "L2:=15, L4:=3, L6:=9, L8:=6, L10:=3, L12:=0")
-	checkResult(t, "gcd(3)", "L7056:=15, L7058:=3, L7060:=9, L7062:=6, L7064:=3, L7066:=0")
+	checkResult(t, "gcd(3)", "L2:=15, L4:=3, L6:=9, L8:=6, L10:=3, L12:=0")
 	CHRtrace = 1
 	printCHRStore()
 }

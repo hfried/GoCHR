@@ -63,11 +63,21 @@ var bigOne = big.NewInt(1)
 // -----------------------------------------
 
 func InitStore() {
+	InitRenamingVariables()
 	v := NewVariable("")
 	emptyBinding = &BindEle{Var: v, T: nil, Next: nil}
 	chrCounter = big.NewInt(0)
 	nextRuleId = 0
 	CHRruleStore = []*chrRule{}
+	CHRstore = store{}
+	BuiltInStore = store{}
+	QueryStore = List{}
+	QueryVars = Vars{}
+}
+
+func ClearCHRStore() {
+	InitRenamingVariables()
+	chrCounter = big.NewInt(0)
 	CHRstore = store{}
 	BuiltInStore = store{}
 	QueryStore = List{}

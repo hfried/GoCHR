@@ -178,6 +178,15 @@ func tAddStringChrRule(t *testing.T, name, keep, del, guard, body string) bool {
 
 }
 
+func tNewQuery(t *testing.T, goals string) bool {
+	ClearCHRStore()
+	if tAddStringGoals(t, goals) {
+		CHRsolver()
+		return true
+	}
+	return false
+}
+
 func tAddStringGoals(t *testing.T, goals string) bool {
 	goalList, ok := ParseGoalString(goals)
 	if !ok || goalList.Type() != ListType {
@@ -201,15 +210,18 @@ func checkResult(t *testing.T, chr, bi string) {
 	chrList, ok := ParseGoalString(chr)
 	if !ok {
 		t.Error(" Scan exspected chr result failed: %s\n", chrList)
+		return
 	}
 	compCHR := chr2List()
 	if !EqualVarName(chrList, compCHR) {
 		if chrList.Type() != ListType {
 			t.Error(fmt.Sprintf(" exspected chr result (no List): '%s' \n !=computed chr result: '%s'", chrList, compCHR))
+			return
 		}
 		lenCompCHR := len(compCHR)
 		if lenCompCHR != len(chrList.(List)) || lenCompCHR == 0 {
 			t.Error(fmt.Sprintf(" exspected chr result: '%s' \n != len computed chr result: '%s'", chrList, compCHR))
+			return
 		}
 		vec := make([]bool, lenCompCHR)
 		for _, c := range compCHR {
@@ -223,6 +235,7 @@ func checkResult(t *testing.T, chr, bi string) {
 			}
 			if !found {
 				t.Error(fmt.Sprintf(" exspected chr result: '%s' \n != len computed chr result: '%s'", chrList, compCHR))
+				return
 			}
 		}
 	}
