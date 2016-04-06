@@ -373,6 +373,15 @@ func ParseGoalString(src string) (result Term, ok bool) {
 	return
 }
 
+func NewQuery(goals string) bool {
+	ClearCHRStore()
+	if addStringGoals(goals) {
+		CHRsolver()
+		return true
+	}
+	return false
+}
+
 func ParseRuleBodyString(src string) (result Term, ok bool) {
 	// src is the input that we want to tokenize.
 	var s sc.Scanner

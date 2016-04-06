@@ -82,6 +82,18 @@ func ClearCHRStore() {
 	BuiltInStore = store{}
 	QueryStore = List{}
 	QueryVars = Vars{}
+	// clear EMaps
+	for _, rule := range CHRruleStore {
+		for _, del := range rule.delHead {
+			del.EMap = &EnvMap{}
+		}
+		for _, keep := range rule.keepHead {
+			keep.EMap = &EnvMap{}
+		}
+		for _, guard := range rule.guard {
+			guard.EMap = &EnvMap{}
+		}
+	}
 }
 
 func NewArgCHR() *argCHR {

@@ -243,16 +243,19 @@ func checkResult(t *testing.T, chr, bi string) {
 	biList, ok := ParseBIString(bi)
 	if !ok {
 		t.Error(" Scan exspected bi result failed: %s\n", biList)
+		return
 	}
 	compBI := bi2List()
 
 	if !EqualVarName(biList, compBI) {
 		if biList.Type() != ListType {
 			t.Error(fmt.Sprintf(" exspected BI result(no List type): '%s' \n !=computed BI result: '%s'", biList, compBI))
+			return
 		}
 		lenCompBI := len(compBI)
 		if lenCompBI != len(biList.(List)) || lenCompBI == 0 {
 			t.Error(fmt.Sprintf(" exspected BI result: '%s' \n != len computed BI result: '%s'", biList, compBI))
+			return
 		}
 		vec := make([]bool, lenCompBI)
 		for _, c := range compBI {
@@ -266,6 +269,7 @@ func checkResult(t *testing.T, chr, bi string) {
 			}
 			if !found {
 				t.Error(fmt.Sprintf(" exspected BI result: '%s' \n !=computed BI result: '%s'", biList, compBI))
+				break
 			}
 		}
 

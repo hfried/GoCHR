@@ -378,32 +378,26 @@ var Counter <-chan *big.Int
 
 // var Counter <-chan *big.Int
 
-// func init() {
-func InitRenamingVariables() {
+var InitRenamingVariables func()
+
+func init() {
 	c := make(chan *big.Int)
+	reset := make(chan bool)
 	i := big.NewInt(1)
 	one := big.NewInt(1)
 	go func() {
 		for {
-			c <- i
-			i = new(big.Int).Add(i, one)
+			select {
+			case c <- i:
+				i = new(big.Int).Add(i, one)
+			case <-reset:
+				i = one
+			}
 		}
 	}()
+	InitRenamingVariables = func() { reset <- true }
 	Counter = c
 }
-
-//func InitRenamingVariables() {
-//		c := make(chan *big.Int)
-//		i := big.NewInt(1)
-//		one := big.NewInt(1)
-//		go func() {
-//			for {
-//				c <- i
-//				i = new(big.Int).Add(i, one)
-//			}
-//		}()
-//		counter2 = c
-//}
 
 func (v Variable) Rename() Variable {
 	return Variable{Name: v.Name, index: <-Counter}
