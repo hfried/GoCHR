@@ -70,9 +70,9 @@ func TestVariableChain1(t *testing.T) {
 }
 
 func TestVariableChain2(t *testing.T) {
-	t1 := Compound{Functor: "person", Args: []Term{Variable{Name: "X"}}}
-	t2 := Compound{Functor: "person", Args: []Term{Variable{Name: "Y"}}}
-	env := AddBinding(Variable{Name: "X"}, Variable{Name: "Y"}, nil)
+	t1 := Compound{Functor: "person", Args: []Term{NewVariable("X")}}
+	t2 := Compound{Functor: "person", Args: []Term{NewVariable("Y")}}
+	env := AddBinding(NewVariable("X"), NewVariable("Y"), nil)
 	t5 := Substitute(t1, env)
 	if !Equal(t2, t5) {
 		t.Errorf("TestVariableChain2 failed\n")
@@ -101,16 +101,7 @@ func tunify(t *testing.T, str1, str2 string) bool {
 }
 
 func TestUnify1(t *testing.T) {
-	//	checkErr := func(e error) {
-	//		if e != nil {
-	//			t.Errorf(e.Error())
-	//		}
-	//	}
-	t1 := Atom("joe")
-	t2 := Atom("sally")
-	t3 := Compound{Functor: "parent", Args: []Term{t1, t2}}
-	t4 := Compound{Functor: "parent", Args: []Term{Variable{Name: "X"}, Variable{Name: "Y"}}}
-	_, ok := Unify(t4, t3, nil)
+	ok := tunify(t, "parent(X,Y)", "parent(joe, sally)")
 	if ok == false {
 		t.Errorf("TestUnify1 failed\n")
 	}
@@ -118,9 +109,10 @@ func TestUnify1(t *testing.T) {
 
 func TestUnify2(t *testing.T) {
 	// check that a variable is not bound to two different terms
-	t3 := Compound{Functor: "parent", Args: []Term{Atom("joe"), Atom("sally")}}
-	t4 := Compound{Functor: "parent", Args: []Term{Variable{Name: "X"}, Variable{Name: "X"}}}
-	_, ok := Unify(t4, t3, nil)
+	//	t3 := Compound{Functor: "parent", Args: []Term{Atom("joe"), Atom("sally")}}
+	//	t4 := Compound{Functor: "parent", Args: []Term{Variable{Name: "X"}, Variable{Name: "X"}}}
+	//	_, ok := Unify(t4, t3, nil)
+	ok := tunify(t, "parent(X,X)", "parent(joe, sally)")
 	if ok == true {
 		t.Errorf("TestUnify2 failed\n")
 	}
@@ -134,11 +126,43 @@ func TestUnify3(t *testing.T) {
 	}
 }
 
+func TestUnify3a(t *testing.T) {
+	ok := tunify(t, "[color(X), color(Y), mix(X,Y,Z), color(Z)]",
+		"[color(blue), color(yellow), mix(blue,yellow,green), color(blue)]")
+	if ok {
+		t.Errorf("TestUnify3a failed\n")
+	}
+}
+
+func TestUnify3b(t *testing.T) {
+	ok := tunify(t, "[color(X), color(Y), mix(X,Y,Z), color(Z)]",
+		"[color(blue), color(yellow), mix(blue,blue,green), color(green)]")
+	if ok {
+		t.Errorf("TestUnify3b failed\n")
+	}
+}
+
+func TestUnify3c(t *testing.T) {
+	ok := tunify(t, "[color(X), color(Y), mix(X,Y,Z), color(Z)]",
+		"[color(green), color(yellow), mix(blue,yellow,green), color(green)]")
+	if ok {
+		t.Errorf("TestUnify3c failed\n")
+	}
+}
+
 func TestUnify4(t *testing.T) {
 	ok := tunify(t, "[p(X, f(X)), f(A, Z), f(g(A,D), E)]",
 		"[p(a, f(a)), f(Y, b), f(g(Y,b), h(c)) ]")
 	if !ok {
 		t.Errorf("TestUnify4 failed\n")
+	}
+}
+
+func TestUnify4a(t *testing.T) {
+	ok := tunify(t, "[p(X, f(X)), f(A, Z), f(g(A,D), E)]",
+		"[p(A, f(A)), f(Y, b), f(g(Y,B), h(C)) ]")
+	if !ok {
+		t.Errorf("TestUnify4a failed\n")
 	}
 }
 
@@ -163,6 +187,22 @@ func TestUnify7(t *testing.T) {
 		"p(Y,f(Y))")
 	if ok {
 		t.Errorf("TestUnify7 failed\n")
+	}
+}
+
+func TestUnify7a(t *testing.T) {
+	ok := tunify(t, "p(X,X)",
+		"p(Y,Z)")
+	if ok {
+		t.Errorf("TestUnify7a failed\n")
+	}
+}
+
+func TestUnify7b(t *testing.T) {
+	ok := tunify(t, "p(X,Y)",
+		"p(Z,Z)")
+	if ok {
+		t.Errorf("TestUnify7b failed\n")
 	}
 }
 

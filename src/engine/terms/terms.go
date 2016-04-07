@@ -254,8 +254,14 @@ func (t Compound) String() string {
 		case 2:
 			if t.Args[0].Type() == CompoundType {
 				prio1 := t.Args[0].(Compound).Prio
+				if prio1 == 0 {
+					prio1 = 7
+				}
 				if t.Args[1].Type() == CompoundType {
 					prio2 := t.Args[1].(Compound).Prio
+					if prio2 == 0 {
+						prio2 = 7
+					}
 					switch {
 					case prio1 < prio && prio2 < prio:
 						return "(" + t.Args[0].String() + ") " + f + " (" + t.Args[1].String() + ")"
@@ -273,7 +279,7 @@ func (t Compound) String() string {
 						return t.Args[0].String() + f + t.Args[1].String()
 					}
 				}
-			} else if t.Args[1].Type() == CompoundType && t.Args[1].(Compound).Prio < prio {
+			} else if t.Args[1].Type() == CompoundType && t.Args[1].(Compound).Prio != 0 && t.Args[1].(Compound).Prio < prio {
 				return t.Args[0].String() + " " + f + " (" + t.Args[1].String() + ")"
 			}
 			return t.Args[0].String() + f + t.Args[1].String()
@@ -536,34 +542,33 @@ func Unify(head, goal Term, env Bindings) (env2 Bindings, ok bool) {
 	return Unify1(head, goal, true /* head vars of a rule */, Vars{}, env)
 }
 
-func Unify1(t1, t2 Term, renaming bool, visited Vars, env Bindings) (env2 Bindings, ok bool) {
-	isHead := renaming // if t1 is a head-term
+func Unify1(t1, t2 Term, isHead bool, visited Vars, env Bindings) (env2 Bindings, ok bool) {
 	t1Type := t1.Type()
 	if t1Type == VariableType {
-		renaming = false
-		for t1Type == VariableType {
-			visited = append(visited, t1.(Variable))
-			t3, ok := GetBinding(t1.(Variable), env)
-			if ok {
-				isHead = false
-				t1 = t3
-				t1Type = t1.Type()
-			} else {
-				break
-			}
-
+		// for t1Type == VariableType {
+		visited = append(visited, t1.(Variable))
+		t3, ok := GetBinding(t1.(Variable), env)
+		if ok {
+			isHead = false
+			t1 = t3
+			t1Type = t1.Type()
+		} else {
+			// break
 		}
+
+		// }
 
 	}
 	t2Type := t2.Type()
-	for t2Type == VariableType {
+	// for t2Type == VariableType {
+	if t2Type == VariableType {
 		visited = append(visited, t2.(Variable))
 		t3, ok := GetBinding(t2.(Variable), env)
 		if ok {
 			t2 = t3
 			t2Type = t2.Type()
 		} else {
-			break
+			// break
 		}
 	}
 	if t1Type == VariableType {
@@ -592,7 +597,7 @@ func Unify1(t1, t2 Term, renaming bool, visited Vars, env Bindings) (env2 Bindin
 				}
 			}
 		}
-		if checkOccur(visited, t2, env) {
+		if !isHead || checkOccur(visited, t2, env) {
 			return nil, false
 		}
 		env2 = AddBinding(t1.(Variable), t2, env)
@@ -603,8 +608,8 @@ func Unify1(t1, t2 Term, renaming bool, visited Vars, env Bindings) (env2 Bindin
 		//		if checkOccur(visited, t1, env) {
 		//			return nil, false
 		//		}
-		//		// to do: if renaming { rename vars in t1 }
-		//		if renaming { renameVars(t1)}
+		//		// to do: if isHead { rename vars in t1 }
+		//		if isHead { renameVars(t1)}
 		//		env2 = AddBinding(t2.(Variable), t1, env)
 		//		return env2, true
 	}
@@ -618,17 +623,17 @@ func Unify1(t1, t2 Term, renaming bool, visited Vars, env Bindings) (env2 Bindin
 			l2 := len(t2List)
 			if arg0.Type() == ListType && l2 >= l0 {
 				for i, ele := range arg0.(List) {
-					// Unify1(t1, t2 Term, renaming bool, visited Vars, env Bindings) (env2 Bindings, ok bool)
-					env2, ok = Unify1(ele, t2List[i], renaming, visited, env)
+					// Unify1(t1, t2 Term, isHead bool, visited Vars, env Bindings) (env2 Bindings, ok bool)
+					env2, ok = Unify1(ele, t2List[i], isHead, visited, env)
 					if !ok {
 						return env, false
 					}
 					env = env2
 				}
 				if l2 == l0 {
-					env2, ok = Unify1(arg1, List{}, renaming, visited, env)
+					env2, ok = Unify1(arg1, List{}, isHead, visited, env)
 				} else {
-					env2, ok = Unify1(arg1, t2List[len(arg0.(List)):], renaming, visited, env)
+					env2, ok = Unify1(arg1, t2List[len(arg0.(List)):], isHead, visited, env)
 				}
 				if !ok {
 					return env, false
@@ -652,7 +657,7 @@ func Unify1(t1, t2 Term, renaming bool, visited Vars, env Bindings) (env2 Bindin
 		}
 		env2 := env
 		for i, _ := range t1.(Compound).Args {
-			env2, ok = Unify1(t1.(Compound).Args[i], t2.(Compound).Args[i], renaming, visited, env2)
+			env2, ok = Unify1(t1.(Compound).Args[i], t2.(Compound).Args[i], isHead, visited, env2)
 			if !ok {
 				return env, false
 			}
@@ -681,16 +686,16 @@ func Unify1(t1, t2 Term, renaming bool, visited Vars, env Bindings) (env2 Bindin
 			}
 			env2 := env
 			for i := 0; i < lent1m1; i++ {
-				env2, ok = Unify1(t1.(List)[i], t2.(List)[i], renaming, visited, env2)
+				env2, ok = Unify1(t1.(List)[i], t2.(List)[i], isHead, visited, env2)
 				if !ok {
 					return env, false
 				}
 			}
 			v := last.(Compound).Args[0]
 			if lent2 == lent1m1 {
-				env2, ok = Unify1(v, List{}, renaming, visited, env2)
+				env2, ok = Unify1(v, List{}, isHead, visited, env2)
 			} else {
-				env2, ok = Unify1(v, t2.(List)[lent1m1:], renaming, visited, env2)
+				env2, ok = Unify1(v, t2.(List)[lent1m1:], isHead, visited, env2)
 			}
 			if !ok {
 				return env, false
@@ -704,7 +709,7 @@ func Unify1(t1, t2 Term, renaming bool, visited Vars, env Bindings) (env2 Bindin
 		env2 := env
 		// for i, _ := range t1.(List) {
 		for i := 0; i < lent1; i++ {
-			env2, ok = Unify1(t1.(List)[i], t2.(List)[i], renaming, visited, env2)
+			env2, ok = Unify1(t1.(List)[i], t2.(List)[i], isHead, visited, env2)
 			if !ok {
 				return env, false
 			}
