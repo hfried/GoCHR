@@ -23,7 +23,7 @@ const (
 	ParseHead parseType = iota
 	ParseBI
 	ParseGoal     // CHR and Built-In
-	ParseRuleBody // Chr, Built-In and Variable
+	ParseRuleBody // Chr, Built-In, true, false and Variable
 )
 
 func CHRerr(format string, a ...interface{}) {
@@ -361,6 +361,18 @@ func ParseBIString(src string) (result Term, ok bool) {
 	return
 }
 
+func ParseRuleBodyString(src string) (result Term, ok bool) {
+	// src is the input that we want to tokenize.
+	var s sc.Scanner
+	// var s *sc.Scanner
+	// Initialize the scanner.
+	s.Init(strings.NewReader(src))
+	s.Error = Err
+
+	result, _, ok = parseConstraints(ParseRuleBody, &s)
+	return
+}
+
 func ParseGoalString(src string) (result Term, ok bool) {
 	// src is the input that we want to tokenize.
 	var s sc.Scanner
@@ -380,18 +392,6 @@ func NewQuery(goals string) bool {
 		return true
 	}
 	return false
-}
-
-func ParseRuleBodyString(src string) (result Term, ok bool) {
-	// src is the input that we want to tokenize.
-	var s sc.Scanner
-	// var s *sc.Scanner
-	// Initialize the scanner.
-	s.Init(strings.NewReader(src))
-	s.Error = Err
-
-	result, _, ok = parseConstraints(ParseRuleBody, &s)
-	return
 }
 
 func prove2Clist(ty parseType, name string, t Term) (cl CList, ok bool) {
@@ -627,13 +627,27 @@ func parseBIConstraint(s *sc.Scanner) (t Term, tok rune, ok bool) {
 	return
 }
 
-func printCHRStore() {
+func printCHRStore(h string) {
+	switch Result {
+	case REmpty:
+		if h != "New goal:" {
+			TraceHeadln(1, 0, h, " No rule fired (!)")
+			return
+		}
+	case RFalse:
+		TraceHeadln(1, 0, h, " false (!)")
+		return
+	case RTrue:
+		TraceHeadln(1, 0, h, " true (!)")
+		return
+	}
+	// default: Result == RStore
 	first := true
 	for _, aChr := range CHRstore {
 		for _, con := range aChr.varArg {
 			if !con.IsDeleted {
 				if first {
-					TraceHead(1, 0, "CHR-Store: [", con.String())
+					TraceHead(1, 0, h, " CHR-Store: [", con.String())
 					first = false
 				} else {
 					Trace(1, ", ", con.String())
@@ -642,7 +656,7 @@ func printCHRStore() {
 		}
 	}
 	if first {
-		TraceHeadln(1, 0, "CHR-Store: []")
+		TraceHeadln(1, 0, h, " CHR-Store: []")
 	} else {
 		Traceln(1, "]")
 	}
@@ -652,7 +666,7 @@ func printCHRStore() {
 		for _, con := range aChr.varArg {
 			if !con.IsDeleted {
 				if first {
-					TraceHead(1, 0, "Built-In Store: [", con.String())
+					TraceHead(1, 0, h, " Built-In Store: [", con.String())
 					first = false
 				} else {
 					Trace(1, ", ", con.String())
@@ -661,15 +675,45 @@ func printCHRStore() {
 		}
 	}
 	if first {
-		TraceHeadln(1, 0, "Built-In Store: []")
+		TraceHeadln(1, 0, h, " Built-In Store: []")
 	} else {
 		Traceln(1, "]")
 	}
 
 }
 
+func chr2CList() (l CList) {
+	l = CList{}
+	if Result != RStore {
+		return
+	}
+	for _, aChr := range CHRstore {
+		for _, con := range aChr.varArg {
+			if !con.IsDeleted {
+				l = append(l, con)
+			}
+		}
+	}
+	return
+}
+
+func bi2CList() (l CList) {
+	l = CList{}
+	for _, aChr := range BuiltInStore {
+		for _, con := range aChr.varArg {
+			if !con.IsDeleted {
+				l = append(l, con)
+			}
+		}
+	}
+	return
+}
+
 func chr2List() (l List) {
 	l = List{}
+	if Result != RStore {
+		return
+	}
 	for _, aChr := range CHRstore {
 		for _, con := range aChr.varArg {
 			if !con.IsDeleted {
@@ -681,11 +725,21 @@ func chr2List() (l List) {
 }
 
 func bi2List() (l List) {
-	l = List{}
-	for _, aChr := range BuiltInStore {
-		for _, con := range aChr.varArg {
-			if !con.IsDeleted {
-				l = append(l, *con)
+	switch Result {
+	case REmpty:
+		l = List{String("no rule fired")}
+	case RFalse:
+		l = List{Bool(false)}
+	case RTrue:
+		l = List{Bool(true)}
+	default:
+
+		l = List{}
+		for _, aChr := range BuiltInStore {
+			for _, con := range aChr.varArg {
+				if !con.IsDeleted {
+					l = append(l, *con)
+				}
 			}
 		}
 	}

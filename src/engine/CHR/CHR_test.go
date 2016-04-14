@@ -131,12 +131,12 @@ func TestCHRRule01(t *testing.T) {
 
 	CHRsolver()
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 	CHRtrace = 0
 	tNewQuery(t, "prime(20)")
 	checkResult(t, "prime(19), prime(17), prime(13), prime(11), prime(7), prime(5), prime(3), prime(2)", "")
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 }
 
 func TestCHRRule02(t *testing.T) {
@@ -152,19 +152,19 @@ func TestCHRRule02(t *testing.T) {
 	CHRsolver()
 	checkResult(t, "gcd(11)", "")
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 	CHRtrace = 0
 	tNewQuery(t, "gcd(12),gcd(18)")
 	checkResult(t, "gcd(6)", "")
 
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 	CHRtrace = 0
 	tNewQuery(t, "gcd(3528),gcd(3780)")
 	checkResult(t, "gcd(252)", "")
 
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 }
 
 func TestCHRRule02a(t *testing.T) {
@@ -180,19 +180,19 @@ func TestCHRRule02a(t *testing.T) {
 	CHRsolver()
 	checkResult(t, "gcd(11)", "")
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 	CHRtrace = 0
 	tNewQuery(t, "gcd(12),gcd(18)")
 	checkResult(t, "gcd(6)", "")
 
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 	CHRtrace = 0
 	tNewQuery(t, "gcd(3528),gcd(3780)")
 	checkResult(t, "gcd(252)", "")
 
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 }
 
 func TestCHRRule02b(t *testing.T) {
@@ -210,19 +210,19 @@ func TestCHRRule02b(t *testing.T) {
 
 	checkResult(t, "gcd(11)", "")
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 	CHRtrace = 0
 	tNewQuery(t, "gcd(12),gcd(18)")
 	checkResult(t, "gcd(6)", "")
 
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 	CHRtrace = 0
 	tNewQuery(t, "gcd(3528),gcd(3780)")
 	checkResult(t, "gcd(252)", "")
 
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 }
 
 func TestCHRRule02c(t *testing.T) {
@@ -240,19 +240,19 @@ func TestCHRRule02c(t *testing.T) {
 
 	checkResult(t, "gcd(11)", "")
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 	CHRtrace = 0
 	tNewQuery(t, "gcd(12),gcd(18)")
 	checkResult(t, "gcd(6)", "")
 
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 	CHRtrace = 0
 	tNewQuery(t, "gcd(3528),gcd(3780)")
 	checkResult(t, "gcd(252)", "")
 
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 }
 
 func TestCHRRule02d(t *testing.T) {
@@ -269,12 +269,12 @@ func TestCHRRule02d(t *testing.T) {
 	CHRsolver()
 	checkResult(t, "gcd(3)", "L2:=15, L4:=3, L6:=9, L8:=6, L10:=3, L12:=0")
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 	CHRtrace = 0
 	tNewQuery(t, "gcd(12),gcd(18)")
 	checkResult(t, "gcd(6)", "L2:=6, L4:=6, L6:=0")
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 }
 
 func TestCHRRule04a(t *testing.T) {
@@ -291,13 +291,13 @@ func TestCHRRule04a(t *testing.T) {
 
 	checkResult(t, "upto(10), fib(0,1), fib(1,1), fib(2,2), fib(3,3), fib(4,5), fib(5,8), fib(6,13), fib(7,21), fib(8,34), fib(9,55), fib(10,89)", "")
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 	CHRtrace = 0
 	tNewQuery(t, "upto(20)")
 	checkResult(t, "upto(20), fib(0,1), fib(1,1), fib(2,2), fib(3,3), fib(4,5), fib(5,8), fib(6,13), fib(7,21), fib(8,34), fib(9,55), fib(10,89), fib(11,144), fib(12,233), fib(13,377), fib(14,610), fib(15,987), fib(16,1597), fib(17,2584), fib(18,4181), fib(19,6765), fib(20,10946)", "")
 
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 }
 
 func TestCHRRule05a(t *testing.T) {
@@ -316,7 +316,7 @@ func TestCHRRule05a(t *testing.T) {
 
 	checkResult(t, "", "A==C, B==C")
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 }
 
 func TestCHRRule06(t *testing.T) {
@@ -338,7 +338,7 @@ func TestCHRRule06(t *testing.T) {
 
 	checkResult(t, "source(berlin), dist(berlin,0), dist(wolfsburg,230), dist(jena,259), dist(erfurt,314), dist(giessen,519), dist(hannover,319), dist(bielefeld,427), dist(köln,621), dist(aachen,706)", "")
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 }
 
 func TestCHRRule07(t *testing.T) {
@@ -361,7 +361,7 @@ func TestCHRRule07(t *testing.T) {
 
 	checkResult(t, "source(berlin), dist(berlin,[berlin],0), dist(wolfsburg,[wolfsburg, berlin],230), dist(jena,[jena, berlin],259), dist(erfurt,[erfurt, jena, berlin],314), dist(giessen,[giessen, erfurt, jena, berlin],519), dist(hannover,[hannover, wolfsburg, berlin],319), dist(bielefeld,[bielefeld, hannover, wolfsburg, berlin],427), dist(köln,[köln, bielefeld, hannover, wolfsburg, berlin],621), dist(aachen,[aachen, köln, bielefeld, hannover, wolfsburg, berlin],706)", "")
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 }
 
 func TestCHRRule08(t *testing.T) {
@@ -384,7 +384,7 @@ func TestCHRRule08(t *testing.T) {
 
 	checkResult(t, "source(berlin), dist([berlin],0), dist([wolfsburg, berlin],230), dist([jena, berlin],259), dist([erfurt, jena, berlin],314), dist([giessen, erfurt, jena, berlin],519), dist([hannover, wolfsburg, berlin],319), dist([bielefeld, hannover, wolfsburg, berlin],427), dist([köln, bielefeld, hannover, wolfsburg, berlin],621), dist([aachen, köln, bielefeld, hannover, wolfsburg, berlin],706)", "")
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
 }
 
 func TestCHRRule09(t *testing.T) {
@@ -407,5 +407,139 @@ func TestCHRRule09(t *testing.T) {
 
 	checkResult(t, "source(berlin), dist([berlin],0), dist([wolfsburg, berlin],230), dist([jena, berlin],259), dist([erfurt, jena, berlin],314), dist([giessen, erfurt, jena, berlin],519), dist([hannover, wolfsburg, berlin],319), dist([bielefeld, hannover, wolfsburg, berlin],427), dist([köln, bielefeld, hannover, wolfsburg, berlin],621), dist([aachen, köln, bielefeld, hannover, wolfsburg, berlin],706)", "")
 	CHRtrace = 1
-	printCHRStore()
+	printCHRStore("Result")
+}
+
+func TestCHRRule10(t *testing.T) {
+	CHRtrace = 1
+	ok := ParseStringCHRRulesGoals(`
+	// change succ3 and search in orginal code
+zero1 @ add(0,Y,Z) <=> Y == Z.
+zero2 @ add(X,0,Z) <=> X == Z.
+zero3 @ add(X,Y,0) <=> X == 0, Y == 0 .
+
+same1 @ add(X,E,E) <=> X == 0 .
+same2 @ add(E,Y,E) <=> Y == 0 .
+// replace succ3
+
+// new_succ3 @ add(s(X), s(X), s(s(W))) <=> add(X,X,W)
+succ1 @ add(s(X),Y,Z) <=> Z == s(W), add(X,Y,W).
+// new_succ1 @ add(s(X), Y, s(W)) <=> add(X, Y, W)
+succ2 @ add(X,s(Y),Z) <=> Z == s(W), add(X,Y,W).
+// new_succ2 @ add(X,s(Y),s(W)) <=> add(X,Y,W).
+//succ3 @ add(X,X,s(Z)) <=> Z == s(W), X == s(Y), add(Y,Y,W).
+succ3_1 @ add(X,X,s(s(W))) <=> X == s(Y), add(Y,Y,W).
+succ3_1a @ add(X,Y,s(s(W))) <=> X == s(A), Y == s(B), add(A,B,W).
+
+
+// search @ add(X,Y,s(Z)) <=> true | add(X1,Y1,Z),
+//                                (X = s(X1),Y = Y1 ; X = X1,Y = s(Y1)).
+
+// search1 @ add(X,Y,s(Z)) <=> X == s(X1),Y == Y1 | add(X1,Y1,Z).
+// search1 @ add(s(X1), Y, s(Z)) <=> add(X1, Y, Z).
+// search2 @ add(X,Y,s(Z)) <=> X == X1, Y == s(Y1)| add(X1,Y1,Z).
+// add(s(s(0)),s(s(s(0))),s(s(s(s(s(0)))))). // yes
+add(X,s(s(0)),s(s(s(0)))).
+`)
+	if !ok {
+		t.Error("TestCHRRule10 fails, Error in parse string")
+	}
+	CHRtrace = 0
+	CHRsolver()
+
+	checkResult(t, "", "X == s(0)")
+	CHRtrace = 1
+	printCHRStore("Result")
+
+	CHRtrace = 0
+	tNewQuery(t, "add(s(s(0)), s(0), Z).")
+	checkResult(t, "", "Z == s(s(s(0)))")
+
+	CHRtrace = 1
+	printCHRStore("Result")
+
+	CHRtrace = 0
+	tNewQuery(t, "add(X,Y,s(s(0))).")
+	// 1: X = s(s(0)),Y = 0; 2: X = s(0),Y = s(0); 3: X = s(0),Y = s(0); 4: X = 0,Y = s(s(0)).
+	checkResult(t, "", "X == s(0), Y == s(0)")
+
+	CHRtrace = 1
+	printCHRStore("Result")
+
+	CHRtrace = 0
+	tNewQuery(t, "add(X,X,s(s(0))).")
+	checkResult(t, "", "X == s(0)")
+
+	CHRtrace = 1
+	printCHRStore("Result")
+
+}
+
+func TestCHRRule11(t *testing.T) {
+	CHRtrace = 1
+	ok := ParseStringCHRRulesGoals(`
+	// change only search in orginal code
+zero1 @ add(0,Y,Z) <=> Y == Z.
+zero2 @ add(X,0,Z) <=> X == Z.
+zero3 @ add(X,Y,0) <=> X == 0, Y == 0 .
+
+same1 @ add(X,E,E) <=> X == 0 .
+same2 @ add(E,Y,E) <=> Y == 0 .
+
+succ1 @ add(s(X),Y,Z) <=> Z == s(W), add(X,Y,W).
+succ2 @ add(X,s(Y),Z) <=> Z == s(W), add(X,Y,W).
+succ3 @ add(X,X,s(Z)) <=> Z == s(W), X == s(Y), add(Y,Y,W).
+
+// search @ add(X,Y,s(Z)) <=> true | add(X1,Y1,Z), (X = s(X1),Y = Y1 ; X = X1,Y = s(Y1)).
+    
+search @ add(X,Y,s(Z)) <=> add(X1,Y1,Z), X == s(X1),Y == Y1.
+search @ add(X,Y,s(Z)) <=> add(X1,Y1,Z), X == X1,Y == s(Y1).
+add(X,s(s(0)),s(s(s(0)))). 
+`)
+	if !ok {
+		t.Error("TestCHRRule11 fails, Error in parse string")
+	}
+	CHRtrace = 0
+	CHRsolver()
+
+	checkResult(t, "", "X==s(0)")
+	CHRtrace = 1
+	printCHRStore("Result")
+
+	CHRtrace = 0
+	tNewQuery(t, "add(s(s(0)), s(0), Z).")
+	checkResult(t, "", "Z==s(s(s(0)))")
+
+	CHRtrace = 1
+	printCHRStore("Result")
+
+	CHRtrace = 0
+	tNewQuery(t, "add(X,Y,s(s(0))).")
+	// 1: X = s(s(0)),Y = 0; 2: X = s(0),Y = s(0); 3: X = s(0),Y = s(0); 4: X = 0,Y = s(s(0)).
+	checkResult(t, "", "X==s(s(0)), Y==0")
+
+	CHRtrace = 1
+	printCHRStore("Result")
+
+	CHRtrace = 0
+	tNewQuery(t, "add(X,X,s(s(0))).")
+	checkResult(t, "", "X==s(0)")
+
+	CHRtrace = 1
+	printCHRStore("Result")
+
+	CHRtrace = 0
+	tNewQuery(t, "add(X,X,s(s(s(0)))).")
+	checkResult(t, "", "false")
+
+	CHRtrace = 1
+	printCHRStore("Result")
+
+	CHRtrace = 0
+	tNewQuery(t, "add(s(0),X,Y), add(X,s(s(0)),s(s(s(0)))).")
+	checkResult(t, "", "Y==s(s(0)), X==s(0), X==s(0)")
+
+	CHRtrace = 1
+	printCHRStore("Result")
+
 }

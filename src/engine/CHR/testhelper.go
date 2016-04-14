@@ -181,6 +181,11 @@ func tAddStringChrRule(t *testing.T, name, keep, del, guard, body string) bool {
 func tNewQuery(t *testing.T, goals string) bool {
 	ClearCHRStore()
 	if tAddStringGoals(t, goals) {
+		if CHRtrace == 0 {
+			CHRtrace = 1
+			printCHRStore("New goal:")
+			CHRtrace = 0
+		}
 		CHRsolver()
 		return true
 	}
@@ -213,7 +218,22 @@ func checkResult(t *testing.T, chr, bi string) {
 		return
 	}
 	compCHR := chr2List()
-	if !EqualVarName(chrList, compCHR) {
+	chrOK := EqualVarNameCList(compCHR, chrList)
+
+	biList, ok := ParseRuleBodyString(bi)
+	if !ok {
+		t.Error(" Scan exspected bi result failed: %s\n", biList)
+		return
+	}
+	compBI := bi2List()
+	biOK := EqualVarNameCList(compBI, biList)
+
+	if !chrOK && !biOK {
+		t.Error(fmt.Sprintf(" exspected chr result: '%s' \n != computed chr result: '%s'\n exspected BI result: '%s' \n !=computed BI result: '%s'", chrList, compCHR, biList, compBI))
+		return
+	}
+
+	if !chrOK {
 		if chrList.Type() != ListType {
 			t.Error(fmt.Sprintf(" exspected chr result (no List): '%s' \n !=computed chr result: '%s'", chrList, compCHR))
 			return
@@ -240,14 +260,7 @@ func checkResult(t *testing.T, chr, bi string) {
 		}
 	}
 
-	biList, ok := ParseBIString(bi)
-	if !ok {
-		t.Error(" Scan exspected bi result failed: %s\n", biList)
-		return
-	}
-	compBI := bi2List()
-
-	if !EqualVarName(biList, compBI) {
+	if !biOK {
 		if biList.Type() != ListType {
 			t.Error(fmt.Sprintf(" exspected BI result(no List type): '%s' \n !=computed BI result: '%s'", biList, compBI))
 			return
@@ -274,6 +287,22 @@ func checkResult(t *testing.T, chr, bi string) {
 		}
 
 	}
+}
+
+func EqualVarNameCList(t1 Term, t2 Term) bool {
+	if t1.Type() != ListType {
+		return false
+	}
+	if t2.Type() != ListType || len(t1.(List)) != len(t2.(List)) {
+		return false
+	}
+	for i, _ := range t1.(List) {
+		ok := EqualVarName(t1.(List)[i], t2.(List)[i])
+		if !ok {
+			return false
+		}
+	}
+	return true
 }
 
 func EqualVarName(t1, t2 Term) bool {
@@ -319,8 +348,8 @@ func EqualVarName(t1, t2 Term) bool {
 			//				(t1.(Variable).index == nil && t2.(Variable).index == nil)) {
 			return true
 		}
-		fmt.Printf("## ## ## t1-name: %s, t2-name: %s\n",
-			t1.(Variable).Name, t2.(Variable).Name)
+		//		fmt.Printf("## ## ## t1-name: %s, t2-name: %s\n",
+		//			t1.(Variable).Name, t2.(Variable).Name)
 		return false
 	default:
 		return false

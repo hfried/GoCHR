@@ -13,7 +13,7 @@ import (
 	"testing"
 )
 
-func TestMatch1(t *testing.T) {
+func TestMatch01(t *testing.T) {
 	//	checkErr := func(e error) {
 	//		if e != nil {
 	//			t.Errorf(e.Error())
@@ -29,7 +29,7 @@ func TestMatch1(t *testing.T) {
 	}
 }
 
-func TestMatch2(t *testing.T) {
+func TestMatch02(t *testing.T) {
 	// check that a variable is not bound to two different terms
 	t3 := Compound{Functor: "parent", Args: []Term{Atom("joe"), Atom("sally")}}
 	t4 := Compound{Functor: "parent", Args: []Term{Variable{Name: "X"}, Variable{Name: "X"}}}
@@ -79,20 +79,20 @@ func TestVariableChain2(t *testing.T) {
 	}
 }
 
-func tunify(t *testing.T, str1, str2 string) bool {
+func tmatch(t *testing.T, str1, str2 string) bool {
 
 	term1, ok := ReadString(str1)
 	if !ok {
-		t.Errorf(fmt.Sprintf("Scan str1 in unify \"%s\" failed, term1: %s", str1, term1.String()))
+		t.Errorf(fmt.Sprintf("Scan str1 in match \"%s\" failed, term1: %s", str1, term1.String()))
 		return false
 	}
 
 	term2, ok := ReadString(str2)
 	if !ok {
-		t.Errorf(fmt.Sprintf("Scan str2 in unify \"%s\" failed, term2: %s", str2, term2.String()))
+		t.Errorf(fmt.Sprintf("Scan str2 in match \"%s\" failed, term2: %s", str2, term2.String()))
 	}
 	fmt.Printf("  Unitfy  %s  \n       mit  %s \n", term1.String(), term2.String())
-	env, ok := Unify(term1, term2, nil)
+	env, ok := Match(term1, term2, nil)
 	fmt.Printf("---Binding---\n")
 	for ; env != nil; env = env.Next {
 		fmt.Printf(" %s == %s \n", env.Var, env.T)
@@ -100,169 +100,209 @@ func tunify(t *testing.T, str1, str2 string) bool {
 	return ok
 }
 
-func TestUnify1(t *testing.T) {
-	ok := tunify(t, "parent(X,Y)", "parent(joe, sally)")
-	if ok == false {
-		t.Errorf("TestUnify1 failed\n")
+func TestMatch1(t *testing.T) {
+	ok := tmatch(t, "parent(X,Y)", "parent(joe, sally)")
+	if !ok {
+		t.Errorf("TestMatch1 failed\n")
 	}
 }
 
-func TestUnify2(t *testing.T) {
+func TestMatch2(t *testing.T) {
 	// check that a variable is not bound to two different terms
 	//	t3 := Compound{Functor: "parent", Args: []Term{Atom("joe"), Atom("sally")}}
 	//	t4 := Compound{Functor: "parent", Args: []Term{Variable{Name: "X"}, Variable{Name: "X"}}}
-	//	_, ok := Unify(t4, t3, nil)
-	ok := tunify(t, "parent(X,X)", "parent(joe, sally)")
-	if ok == true {
-		t.Errorf("TestUnify2 failed\n")
+	//	_, ok := Match(t4, t3, nil)
+	ok := tmatch(t, "parent(X,X)", "parent(joe, sally)")
+	if ok {
+		t.Errorf("TestMatch2 failed\n")
 	}
 }
 
-func TestUnify3(t *testing.T) {
-	ok := tunify(t, "[color(X), color(Y), mix(X,Y,Z), color(Z)]",
+func TestMatch3(t *testing.T) {
+	ok := tmatch(t, "[color(X), color(Y), mix(X,Y,Z), color(Z)]",
 		"[color(blue), color(yellow), mix(blue,yellow,green), color(green)]")
 	if !ok {
-		t.Errorf("TestUnify3 failed\n")
+		t.Errorf("TestMatch3 failed\n")
 	}
 }
 
-func TestUnify3a(t *testing.T) {
-	ok := tunify(t, "[color(X), color(Y), mix(X,Y,Z), color(Z)]",
+func TestMatch3a(t *testing.T) {
+	ok := tmatch(t, "[color(X), color(Y), mix(X,Y,Z), color(Z)]",
 		"[color(blue), color(yellow), mix(blue,yellow,green), color(blue)]")
 	if ok {
-		t.Errorf("TestUnify3a failed\n")
+		t.Errorf("TestMatch3a failed\n")
 	}
 }
 
-func TestUnify3b(t *testing.T) {
-	ok := tunify(t, "[color(X), color(Y), mix(X,Y,Z), color(Z)]",
+func TestMatch3b(t *testing.T) {
+	ok := tmatch(t, "[color(X), color(Y), mix(X,Y,Z), color(Z)]",
 		"[color(blue), color(yellow), mix(blue,blue,green), color(green)]")
 	if ok {
-		t.Errorf("TestUnify3b failed\n")
+		t.Errorf("TestMatch3b failed\n")
 	}
 }
 
-func TestUnify3c(t *testing.T) {
-	ok := tunify(t, "[color(X), color(Y), mix(X,Y,Z), color(Z)]",
+func TestMatch3c(t *testing.T) {
+	ok := tmatch(t, "[color(X), color(Y), mix(X,Y,Z), color(Z)]",
 		"[color(green), color(yellow), mix(blue,yellow,green), color(green)]")
 	if ok {
-		t.Errorf("TestUnify3c failed\n")
+		t.Errorf("TestMatch3c failed\n")
 	}
 }
 
-func TestUnify4(t *testing.T) {
-	ok := tunify(t, "[p(X, f(X)), f(A, Z), f(g(A,D), E)]",
+func TestMatch4(t *testing.T) {
+	ok := tmatch(t, "[p(X, f(X)), f(A, Z), f(g(A,D), E)]",
 		"[p(a, f(a)), f(Y, b), f(g(Y,b), h(c)) ]")
 	if !ok {
-		t.Errorf("TestUnify4 failed\n")
+		t.Errorf("TestMatch4 failed\n")
 	}
 }
 
-func TestUnify4a(t *testing.T) {
-	ok := tunify(t, "[p(X, f(X)), f(A, Z), f(g(A,D), E)]",
+func TestMatch4a(t *testing.T) {
+	ok := tmatch(t, "[p(X, f(X)), f(A, Z), f(g(A,D), E)]",
 		"[p(A, f(A)), f(Y, b), f(g(Y,B), h(C)) ]")
 	if !ok {
-		t.Errorf("TestUnify4a failed\n")
+		t.Errorf("TestMatch4a failed\n")
 	}
 }
 
-func TestUnify5(t *testing.T) {
-	ok := tunify(t, "g(A,A)",
+func TestMatch5(t *testing.T) {
+	ok := tmatch(t, "g(A,A)",
 		"g(X,f(X))")
 	if ok {
-		t.Errorf("TestUnify5 failed\n")
+		t.Errorf("TestMatch5 failed\n")
 	}
 }
 
-func TestUnify6(t *testing.T) {
-	ok := tunify(t, "g(A, A)",
+func TestMatch6(t *testing.T) {
+	ok := tmatch(t, "g(A, A)",
 		"g(X, p(E,f(X,a)))")
 	if ok {
-		t.Errorf("TestUnify6 failed\n")
+		t.Errorf("TestMatch6 failed\n")
 	}
 }
 
-func TestUnify7(t *testing.T) {
-	ok := tunify(t, "p(X,X)",
+func TestMatch7(t *testing.T) {
+	ok := tmatch(t, "p(X,X)",
 		"p(Y,f(Y))")
 	if ok {
-		t.Errorf("TestUnify7 failed\n")
+		t.Errorf("TestMatch7 failed\n")
 	}
 }
 
-func TestUnify7a(t *testing.T) {
-	ok := tunify(t, "p(X,X)",
+func TestMatch7a(t *testing.T) {
+	// !!!
+	ok := tmatch(t, "p(X,X)",
 		"p(Y,Z)")
 	if ok {
-		t.Errorf("TestUnify7a failed\n")
+		t.Errorf("TestMatch7a failed\n")
 	}
 }
 
-func TestUnify7b(t *testing.T) {
-	ok := tunify(t, "p(X,Y)",
+func TestMatch7b(t *testing.T) {
+	// !!!
+	ok := tmatch(t, "p(X,Y)",
 		"p(Z,Z)")
-	if ok {
-		t.Errorf("TestUnify7b failed\n")
+	if !ok {
+		t.Errorf("TestMatch7b failed\n")
 	}
 }
 
-func TestUnify8(t *testing.T) {
-	ok := tunify(t, "f(g(a,D),E, E)",
+func TestMatch8(t *testing.T) {
+	ok := tmatch(t, "f(g(a,D),E, E)",
 		"f(g(a,b),h(Y),Y)")
 	if ok {
-		t.Errorf("TestUnify8 failed\n")
+		t.Errorf("TestMatch8 failed\n")
 	}
 }
 
-func TestUnify9(t *testing.T) {
-	ok := tunify(t, "f(D, g(a,D))",
+func TestMatch9(t *testing.T) {
+	ok := tmatch(t, "f(D, g(a,D))",
 		"f(X, X)")
 	if ok {
-		t.Errorf("TestUnify9 failed\n")
+		t.Errorf("TestMatch9 failed\n")
 	}
 }
 
-func TestUnify10(t *testing.T) {
-	ok := tunify(t,
+func TestMatch10(t *testing.T) {
+	// !!!
+	ok := tmatch(t,
 		"p(f(A,A),g(B,B),B)",
 		"p(f(X,Y),g(Y,Z),X)")
 	if ok {
-		t.Errorf("TestUnify10 failed\n")
+		t.Errorf("TestMatch10 failed\n")
 	}
 }
 
-func TestUnify11(t *testing.T) {
-	ok := tunify(t,
+func TestMatch11(t *testing.T) {
+	ok := tmatch(t,
 		"p(f(A,A),g(B,B),B)",
 		"p(f(X,Y),g(Y,Z),h(X))")
 	if ok {
-		t.Errorf("TestUnify11 failed\n")
+		t.Errorf("TestMatch11 failed\n")
 	}
 }
 
-func TestUnify12(t *testing.T) {
-	ok := tunify(t,
+func TestMatch12(t *testing.T) {
+	ok := tmatch(t,
 		"[A, B | C]",
 		"[1, 2]")
 	if !ok {
-		t.Errorf("TestUnify12 failed\n")
+		t.Errorf("TestMatch12 failed\n")
 	}
 }
 
-func TestUnify13(t *testing.T) {
-	ok := tunify(t,
+func TestMatch13(t *testing.T) {
+	ok := tmatch(t,
 		"[A, B | C]",
 		"[1, 2, 3]")
 	if !ok {
-		t.Errorf("TestUnify13 failed\n")
+		t.Errorf("TestMatch13 failed\n")
 	}
 }
 
-func TestUnify14(t *testing.T) {
-	ok := tunify(t,
+func TestMatch14(t *testing.T) {
+	ok := tmatch(t,
 		"[A, B | C]",
 		"[1, 2, 3, 4, 5, 6]")
 	if !ok {
-		t.Errorf("TestUnify12 failed\n")
+		t.Errorf("TestMatch14 failed\n")
+	}
+}
+
+func TestMatch15(t *testing.T) {
+	ok := tmatch(t,
+		"add(s(X),Y,Z)",
+		"add(s(0),A,B)")
+	if !ok {
+		t.Errorf("TestMatch15 failed\n")
+	}
+}
+
+func TestMatch16(t *testing.T) {
+	ok := tmatch(t,
+		"add(s(X),Y,Z)",
+		"add(s(0),X,Y)")
+	if !ok {
+		t.Errorf("TestMatch16 failed\n")
+	}
+}
+
+func TestMatch17(t *testing.T) {
+	// !!!
+	ok := tmatch(t,
+		"p(X,X)",
+		"p(s(A),s(22))")
+	if ok {
+		t.Errorf("TestMatch17 failed\n")
+	}
+}
+
+func TestMatch18(t *testing.T) {
+	ok := tmatch(t,
+		"p(X,X)",
+		"p(s(A),s(B))")
+	if ok {
+		t.Errorf("TestMatch18 failed\n")
 	}
 }

@@ -88,6 +88,10 @@ func NewVariable(name string) Variable {
 	return Variable{Name: name, index: big.NewInt(0)}
 }
 
+func IsNewVariable(v Variable) bool {
+	return v.index.Cmp(big.NewInt(0)) == 0
+}
+
 func CopyCompound(c Compound) (c1 Compound) {
 	c1 = Compound{
 		Functor:           c.Functor,
@@ -146,7 +150,63 @@ func GetBinding(v Variable, b Bindings) (t Term, ok bool) {
 	return nil, false
 }
 
-func GetReverseBinding(v Variable, b Bindings) (v2 *Variable, ok bool) {
+func isIn(v Variable, vl []Variable) bool {
+	name := v.Name
+	id := v.index
+	if id != nil {
+		for _, v2 := range vl {
+			if v2.Name == name && v2.index != nil && v2.index.Cmp(id) == 0 {
+				return true
+			}
+		}
+		return false
+	} else {
+		for _, v2 := range vl {
+			if v2.Name == name && v2.index == nil {
+				return true
+			}
+		}
+
+	}
+	return false
+}
+
+func GetImplicitEquals(b Bindings) (cl List, ok bool) {
+	cl = List{}
+	ok = false
+	vl := []Variable{}
+
+	for b != nil {
+		if b.T != nil && b.T.Type() == VariableType && !isIn(b.T.(Variable), vl) {
+			v := b.T.(Variable)
+			vl = append(vl, v)
+			name := v.Name
+			id := v.index
+			vl2 := []Variable{b.Var}
+			b2 := b.Next
+			for b2 != nil {
+				if b.T != nil && b.T.Type() == VariableType {
+					v2 := b.T.(Variable)
+					if v2.Name == name && v2.index.Cmp(id) == 0 && !isIn(b.Var, vl2) {
+						vl2 = append(vl2, b.Var)
+					}
+				}
+				b2 = b2.Next
+			}
+			l := len(vl2)
+			for i := 1; i < l; i++ {
+				cl = append(cl, Compound{Functor: "==", Args: []Term{vl2[0], vl2[i]}}) // Prio: 3
+
+				ok = true
+			}
+
+		}
+		b = b.Next
+	}
+	return cl, ok
+}
+
+/* old GetReserveBinding
 	// fmt.Printf(" GetBinding %s-%d %v \n", v.String(), v.index, b)
 	name := v.Name
 	id := v.index
@@ -174,6 +234,7 @@ func GetReverseBinding(v Variable, b Bindings) (v2 *Variable, ok bool) {
 	// fmt.Printf(" Binding not found \n")
 	return nil, false
 }
+*/
 
 func (t Atom) Type() Type {
 	return AtomType
@@ -502,11 +563,46 @@ func Match(t1, t2 Term, env Bindings) (env2 Bindings, ok bool) {
 			} */
 		return env, true
 	case ListType:
-		if len(t1.(List)) != len(t2.(List)) {
+		lent1 := len(t1.(List))
+		lent2 := len(t2.(List))
+		if lent1 == 0 {
+			if lent2 == 0 {
+				return env, true
+			} else {
+				return env, false
+			}
+		}
+		lent1m1 := lent1 - 1
+		last := t1.(List)[lent1m1]
+		if last.Type() == CompoundType && last.(Compound).Functor == "|" {
+			if lent2 < lent1m1 {
+				return env, false
+			}
+			env2 := env
+			for i := 0; i < lent1m1; i++ {
+				env2, ok = Match(t1.(List)[i], t2.(List)[i], env2)
+				if !ok {
+					return env, false
+				}
+			}
+			v := last.(Compound).Args[0]
+			if lent2 == lent1m1 {
+				env2, ok = Match(v, List{}, env2)
+			} else {
+				env2, ok = Match(v, t2.(List)[lent1m1:], env2)
+			}
+			if !ok {
+				return env, false
+			}
+			env = env2
+			return env, true
+		}
+		if lent1 != lent2 {
 			return env, false
 		}
 		env2 := env
-		for i, _ := range t1.(List) {
+		// for i, _ := range t1.(List) {
+		for i := 0; i < lent1; i++ {
 			env2, ok = Match(t1.(List)[i], t2.(List)[i], env2)
 			if !ok {
 				return env, false
@@ -518,6 +614,7 @@ func Match(t1, t2 Term, env Bindings) (env2 Bindings, ok bool) {
 			env[v] = t
 		} */
 		return env, true
+
 	case VariableType:
 		t3, ok := GetBinding(t1.(Variable), env)
 		if !ok { // variable was not yet bound in env
@@ -537,38 +634,33 @@ func Match(t1, t2 Term, env Bindings) (env2 Bindings, ok bool) {
 	}
 }
 
-// Unify head-term with goal-term
-func Unify(head, goal Term, env Bindings) (env2 Bindings, ok bool) {
-	return Unify1(head, goal, true /* head vars of a rule */, Vars{}, env)
+// Unify two terms in equals t1 == t2
+func Unify(t1, t2 Term, env Bindings) (env2 Bindings, ok bool) {
+	return Unify1(t1, t2, Vars{}, env)
 }
 
-func Unify1(t1, t2 Term, isHead bool, visited Vars, env Bindings) (env2 Bindings, ok bool) {
+func Unify1(t1, t2 Term, visited Vars, env Bindings) (env2 Bindings, ok bool) {
 	t1Type := t1.Type()
-	if t1Type == VariableType {
-		// for t1Type == VariableType {
+	for t1Type == VariableType {
 		visited = append(visited, t1.(Variable))
 		t3, ok := GetBinding(t1.(Variable), env)
 		if ok {
-			isHead = false
 			t1 = t3
 			t1Type = t1.Type()
 		} else {
-			// break
+			break
 		}
-
-		// }
-
 	}
+
 	t2Type := t2.Type()
-	// for t2Type == VariableType {
-	if t2Type == VariableType {
+	for t2Type == VariableType {
 		visited = append(visited, t2.(Variable))
 		t3, ok := GetBinding(t2.(Variable), env)
 		if ok {
 			t2 = t3
 			t2Type = t2.Type()
 		} else {
-			// break
+			break
 		}
 	}
 	if t1Type == VariableType {
@@ -579,71 +671,23 @@ func Unify1(t1, t2 Term, isHead bool, visited Vars, env Bindings) (env2 Bindings
 				// Var == Var
 				return env, true
 			} else {
-				if isHead {
-					// Var1 != Var2 , no occur-check
-					t3, ok := GetReverseBinding(t2.(Variable), env)
-					if ok {
-						if t1.(Variable).Name == t3.Name &&
-							(t1.(Variable).index.Cmp(t3.index) == 0 ||
-								(t1.(Variable).index == nil && t3.index == nil)) {
-							return env, true
-						}
-						return env, false
-					}
-					env2 = AddBinding(t1.(Variable), t2, env)
-					return env2, true
-				} else {
-					return env2, false
-				}
+				env2 = AddBinding(t1.(Variable), t2, env)
+				return env2, true
 			}
 		}
-		if !isHead || checkOccur(visited, t2, env) {
+		if checkOccur(visited, t2, env) {
 			return nil, false
 		}
 		env2 = AddBinding(t1.(Variable), t2, env)
 		return env2, true
 	}
 	if t2Type == VariableType {
-		return env2, false
-		//		if checkOccur(visited, t1, env) {
-		//			return nil, false
-		//		}
-		//		// to do: if isHead { rename vars in t1 }
-		//		if isHead { renameVars(t1)}
-		//		env2 = AddBinding(t2.(Variable), t1, env)
-		//		return env2, true
-	}
-	/*
-		if t1Type == CompoundType && t1.(Compound).Functor == "|" && t2Type == ListType {
-			args := t1.(Compound).Args
-			arg0 := args[0]
-			arg1 := args[1]
-			l0 := len(arg0.(List))
-			t2List := t2.(List)
-			l2 := len(t2List)
-			if arg0.Type() == ListType && l2 >= l0 {
-				for i, ele := range arg0.(List) {
-					// Unify1(t1, t2 Term, isHead bool, visited Vars, env Bindings) (env2 Bindings, ok bool)
-					env2, ok = Unify1(ele, t2List[i], isHead, visited, env)
-					if !ok {
-						return env, false
-					}
-					env = env2
-				}
-				if l2 == l0 {
-					env2, ok = Unify1(arg1, List{}, isHead, visited, env)
-				} else {
-					env2, ok = Unify1(arg1, t2List[len(arg0.(List)):], isHead, visited, env)
-				}
-				if !ok {
-					return env, false
-				}
-				env = env2
-			} else {
-				return env, false
-			}
+		if checkOccur(visited, t1, env) {
+			return nil, false
 		}
-	*/
+		env2 = AddBinding(t2.(Variable), t1, env)
+		return env2, true
+	}
 	if t1Type != t2Type {
 		return env, false
 	}
@@ -657,7 +701,7 @@ func Unify1(t1, t2 Term, isHead bool, visited Vars, env Bindings) (env2 Bindings
 		}
 		env2 := env
 		for i, _ := range t1.(Compound).Args {
-			env2, ok = Unify1(t1.(Compound).Args[i], t2.(Compound).Args[i], isHead, visited, env2)
+			env2, ok = Unify1(t1.(Compound).Args[i], t2.(Compound).Args[i], visited, env2)
 			if !ok {
 				return env, false
 			}
@@ -686,16 +730,16 @@ func Unify1(t1, t2 Term, isHead bool, visited Vars, env Bindings) (env2 Bindings
 			}
 			env2 := env
 			for i := 0; i < lent1m1; i++ {
-				env2, ok = Unify1(t1.(List)[i], t2.(List)[i], isHead, visited, env2)
+				env2, ok = Unify1(t1.(List)[i], t2.(List)[i], visited, env2)
 				if !ok {
 					return env, false
 				}
 			}
 			v := last.(Compound).Args[0]
 			if lent2 == lent1m1 {
-				env2, ok = Unify1(v, List{}, isHead, visited, env2)
+				env2, ok = Unify1(v, List{}, visited, env2)
 			} else {
-				env2, ok = Unify1(v, t2.(List)[lent1m1:], isHead, visited, env2)
+				env2, ok = Unify1(v, t2.(List)[lent1m1:], visited, env2)
 			}
 			if !ok {
 				return env, false
@@ -709,7 +753,7 @@ func Unify1(t1, t2 Term, isHead bool, visited Vars, env Bindings) (env2 Bindings
 		env2 := env
 		// for i, _ := range t1.(List) {
 		for i := 0; i < lent1; i++ {
-			env2, ok = Unify1(t1.(List)[i], t2.(List)[i], isHead, visited, env2)
+			env2, ok = Unify1(t1.(List)[i], t2.(List)[i], visited, env2)
 			if !ok {
 				return env, false
 			}
@@ -728,6 +772,7 @@ func Unify1(t1, t2 Term, isHead bool, visited Vars, env Bindings) (env2 Bindings
 func checkOccur(v Vars, t Term, env Bindings) bool {
 
 	for _, termv := range t.OccurVars() {
+		fmt.Printf(" Var %s in Term: %s \n", termv, t)
 		for _, visitv := range v {
 			if termv.Name == visitv.Name && termv.index.Cmp(visitv.index) == 0 {
 				return true
@@ -919,15 +964,19 @@ func RenameAndSubstitute(t Term, idx *big.Int, env Bindings) Term {
 			if !ok {
 				return t
 			}
-		}
-		for ok == true {
 			t = t2
-			if t2.Type() == VariableType && !visited[t2.(Variable)] {
-				t2, ok = GetBinding(t.(Variable), env)
-			} else {
-				break
-			}
+			return t
 		}
+		//		for ok == true {
+		//			t = t2
+		//			if t2.Type() == VariableType && !visited[t2.(Variable)] {
+		//				visited[t2.(Variable)] = true
+		//				t2, ok = GetBinding(t.(Variable), env)
+		//			} else {
+		//				break
+		//			}
+		//		}
+		t = t2
 		return t
 	default:
 		return t
