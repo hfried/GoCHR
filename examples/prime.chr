@@ -1,0 +1,3 @@
+prime01 @ prime(N) ==> N>2 | prime(N-1).
+prime02 @ prime(A) | prime(B) <=> B > A, B mod A == 0 | true.
+prime(100).

@@ -291,22 +291,87 @@ func CHRsolver() {
 	}
 }
 
+func equationSolver(arg1, arg2 Term, env Bindings) (Bindings, bool) {
+	v1 := arg1.OccurVars()
+	v2 := arg2.OccurVars()
+	lenv1 := len(v1)
+	lenv2 := len(v2)
+	if lenv1 == 0 && lenv2 == 0 {
+		return env, false
+	}
+	var v Variable
+	vFound := 0
+	for _, v3 := range v1 {
+		if IsNewVariable(v3) {
+			if vFound != 0 { // found two variables
+				return env, false
+			}
+			v = v3
+			vFound = 1
+		}
+	}
+	for _, v3 := range v2 {
+		if IsNewVariable(v3) {
+			if vFound != 0 { // found two variables
+				return env, false
+			}
+			v = v3
+			vFound = 2
+		}
+	}
+	if vFound == 0 {
+		return env, false
+	}
+	if vFound == 2 {
+		arg1, arg2 = arg2, arg1
+	}
+	return eqSolver1(v, arg1, arg2, env)
+}
+
+func eqSolver1(v Variable, arg1, arg2 Term, env Bindings) (Bindings, bool) {
+	//	switch arg1.Type() {
+	//	case CompoundType:
+	//	case ListType:
+	//	case VariableType:
+	//		v2 := arg1.(Variable)
+	//		if EqVars(v, v2)
+	//		/*		AtomType Type = iota
+	//		BoolType
+	//		IntType
+	//		FloatType
+	//		StringType
+	//		CompoundType
+	//		ListType
+	//		VariableType
+	//		*/
+	//	}
+
+	return env, false
+}
+
 func reduceStore() {
 	if Result != RStore {
 		return
 	}
 	bi := bi2CList()
 	var env Bindings = nil
-	// search alle equals
+	// search alle bindings in equals
 	for _, b := range bi {
 		if b.Functor == "==" {
 			env2, ok := Unify(b.Args[0], b.Args[1], env)
 			if !ok {
-				Result = RFalse
-				return
+				env2, ok = equationSolver(b.Args[0], b.Args[1], env)
+				if !ok {
+					Result = RFalse
+					return
+				}
 			}
 			env = env2
 		}
+	}
+
+	if env == nil {
+		return
 	}
 	//	for env2 := env; env2 != nil; env2 = env2.Next {
 	//		v1 := env2.Var
@@ -314,43 +379,57 @@ func reduceStore() {
 	//	}
 	// reduce all equals
 	reduce2true := false
+	pcount := 0
+	visited := map[string]bool{}
 	for i, b := range bi {
+		pcount++
 		if b.Functor == "==" {
 			arg0 := b.Args[0]
 			arg1 := b.Args[1]
 			if arg0.Type() == VariableType && IsNewVariable(arg0.(Variable)) &&
 				arg1.Type() == VariableType && IsNewVariable(arg1.(Variable)) {
+				if visited[arg0.(Variable).Name+"#"+arg1.(Variable).Name] ||
+					visited[arg1.(Variable).Name+"#"+arg0.(Variable).Name] {
+					b.IsDeleted = true
+					pcount--
+				} else {
+					visited[arg0.(Variable).Name+"#"+arg1.(Variable).Name] = true
+				}
 				continue
 			}
 			if arg0.Type() == VariableType && IsNewVariable(arg0.(Variable)) {
-
-				for i := 0; i < 10; i++ {
-					arg1 = Substitute(arg1, env)
+				if visited[arg0.(Variable).Name] {
+					b.IsDeleted = true
+					pcount--
+				} else {
+					visited[arg0.(Variable).Name] = true
+					b.Args[1] = Eval(Substitute(arg1, env))
 				}
-				b.Args[1] = arg1
 				continue
 			}
 			if arg1.Type() == VariableType && IsNewVariable(arg1.(Variable)) {
-
-				for i := 0; i < 10; i++ {
-					arg0 = Substitute(arg0, env)
+				if visited[arg1.(Variable).Name] {
+					b.IsDeleted = true
+					pcount--
+				} else {
+					visited[arg1.(Variable).Name] = true
+					b.Args[0] = arg1
+					b.Args[1] = Eval(Substitute(arg0, env))
 				}
-				b.Args[0] = arg1
-				b.Args[1] = arg0
 				continue
 			}
+			pcount--
 			b.IsDeleted = true
 
 		} else {
+			pcount--
 			// subst && eval
 			sb := Substitute(*b, env)
-			for i := 0; i < 10; i++ {
-				sb = Substitute(sb, env)
-			}
 			sb = Eval(sb)
 			if sb.Type() == BoolType {
 				if sb.(Bool) == true {
 					reduce2true = true
+					b.IsDeleted = true
 				} else {
 					Result = RFalse
 					return
@@ -362,10 +441,29 @@ func reduceStore() {
 			}
 		}
 	}
-	if reduce2true {
+	chrs := chr2CList()
+	for i, c := range chrs {
+		pcount++
+		c1 := Substitute(*c, env)
+		c1 = Eval(c1)
+		if c1.Type() == BoolType {
+			if c1.(Bool) == true {
+				reduce2true = true
+				c.IsDeleted = true
+				pcount--
+			} else {
+				Result = RFalse
+				return
+			}
+		}
+		if c1.Type() == CompoundType {
+			c2 := c1.(Compound)
+			chrs[i] = &c2
+		}
+	}
+	if pcount == 0 && reduce2true {
 		Result = RTrue
 	}
-
 }
 
 // prove whether rule fired

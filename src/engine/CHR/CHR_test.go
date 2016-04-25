@@ -119,6 +119,33 @@ func TestCHR12(t *testing.T) {
 //	}
 //}
 
+func TestCHRRule00(t *testing.T) {
+	CHRtrace = 0
+	ok := ParseStringCHRRulesGoals(`
+	sum([], S) <=> S == 0 .
+	sum([X|Xs], S) <=> sum(Xs, S2), S == X + S2.
+	sum([1,2,3,4,5,6,7,8,9,10], S). `)
+	if !ok {
+		t.Error("TestCHRRule00 fails, Error in parse string")
+	}
+
+	CHRsolver()
+	checkResult(t, "", "S==55")
+	CHRtrace = 1
+	printCHRStore("Result")
+	//	CHRtrace = 1
+	//	tNewQuery(t, "sum([X,2,3], 6).")
+	//	checkResult(t, "", "")
+	//	CHRtrace = 1
+	//	printCHRStore("Result")
+
+	//	CHRtrace = 1
+	//	tNewQuery(t, "sum([1,X,3], 6).")
+	//	checkResult(t, "", "")
+	//	CHRtrace = 1
+	//	printCHRStore("Result")
+}
+
 func TestCHRRule01(t *testing.T) {
 	CHRtrace = 0
 	ok := ParseStringCHRRulesGoals(`
@@ -537,7 +564,7 @@ add(X,s(s(0)),s(s(s(0)))).
 
 	CHRtrace = 0
 	tNewQuery(t, "add(s(0),X,Y), add(X,s(s(0)),s(s(s(0)))).")
-	checkResult(t, "", "Y==s(s(0)), X==s(0), X==s(0)")
+	checkResult(t, "", "Y==s(s(0)), X==s(0)")
 
 	CHRtrace = 1
 	printCHRStore("Result")

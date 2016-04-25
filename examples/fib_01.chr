@@ -1,0 +1,3 @@
+fib01@ upto(A) ==> fib(0,1), fib(1,1).
+fib02@ upto(Max), fib(N1,M1), fib(N2,M2) ==> Max > N2, N2 == N1+1 | fib(N2+1,M1+M2).
+upto(10).

@@ -1,0 +1,4 @@
+gcd01@ gcd(0) <=> true .
+// linear complexity
+gcd02@ gcd(N) \ gcd(M) <=> 0<N, N=<M, L := M - N | gcd(L).
+gcd(94017), gcd(1155),gcd(2035).

@@ -1,0 +1,8 @@
+data1 @ data() ==> edge(berlin, 230, wolfsburg), edge(hannover, 89, wolfsburg), edge(hannover, 108, bielefeld), edge(bielefeld, 194, köln).
+data2 @ data() ==> edge(berlin,259, jena), edge(jena,55, erfurt), edge(erfurt,205,giessen), edge(giessen,158,köln), edge(köln, 85, aachen).
+source @ source(V) ==> dist([V], 0).
+del @ dist([V|L], D1) \ dist([V|M], D2) <=> D1 <= D2 | true.
+dist_plus_a@ dist([V|L], D1), edge(V, D2, V2) ==> dist([V2, V|L], D1+D2).
+dist_plus_b@ dist([V|L], D1), edge(V2, D2, V) ==> dist([V2, V|L], D1+D2).
+del_data @ edge(X,Y,Z) <=> true.
+data(), source(berlin).

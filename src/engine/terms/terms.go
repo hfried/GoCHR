@@ -92,6 +92,13 @@ func IsNewVariable(v Variable) bool {
 	return v.index.Cmp(big.NewInt(0)) == 0
 }
 
+func EqVars(v1, v2 Variable) bool {
+	if v1.Name == v2.Name && v1.index.Cmp(v2.index) == 0 {
+		return true
+	}
+	return false
+}
+
 func CopyCompound(c Compound) (c1 Compound) {
 	c1 = Compound{
 		Functor:           c.Functor,
@@ -840,7 +847,10 @@ func Object(t Term) (result Term, ok bool) {
 // is bound to a variable, the second variable is also
 // substituted if it is bound in env, recursively.
 func Substitute(t Term, env Bindings) Term {
-	visited := map[Variable]bool{}
+	return Substitute1(t, map[string]bool{}, env)
+}
+
+func Substitute1(t Term, visited map[string]bool, env Bindings) Term {
 
 	switch t.Type() {
 	case AtomType, BoolType, IntType, FloatType, StringType:
@@ -860,14 +870,17 @@ func Substitute(t Term, env Bindings) Term {
 		return List(l)
 	case VariableType:
 		result := t
-		visited[t.(Variable)] = true
+		visited[fmt.Sprintf("%s#%v", t.(Variable).Name, t.(Variable).index)] = true
 		t2, ok := GetBinding(t.(Variable), env)
 		for ok == true {
 			result = t2
-			if t2.Type() == VariableType && !visited[t2.(Variable)] {
+			if t2.Type() == VariableType && !visited[fmt.Sprintf("%s#%v", t2.(Variable).Name, t2.(Variable).index)] {
 				t2, ok = GetBinding(t2.(Variable), env)
 				continue
 			} else {
+				if t2.Type() != VariableType {
+					result = Substitute1(t2, visited, env)
+				}
 				break
 			}
 		}
@@ -935,7 +948,7 @@ func SubstituteBiEnv(t Term, biEnv Bindings) (Term, bool) {
 // is bound to a variable, the second variable is also
 // substituted if it is bound in env, recursively.
 func RenameAndSubstitute(t Term, idx *big.Int, env Bindings) Term {
-	visited := map[Variable]bool{}
+	// visited := map[Variable]bool{}
 
 	switch t.Type() {
 	case AtomType, BoolType, IntType, FloatType, StringType:
@@ -959,7 +972,7 @@ func RenameAndSubstitute(t Term, idx *big.Int, env Bindings) Term {
 		if !ok {
 			// very late variable renaming
 			t = Variable{Name: t.(Variable).Name, index: idx}
-			visited[t.(Variable)] = true
+			// visited[t.(Variable)] = true
 			t2, ok = GetBinding(t.(Variable), env)
 			if !ok {
 				return t

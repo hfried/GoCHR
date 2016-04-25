@@ -1,0 +1,5 @@
+leq_reflexivity  @ leq(X,X) <=> true.
+leq_antisymmetry @ leq(X,Y), leq(Y,X) <=> X==Y.
+leq_idempotence  @ leq(X,Y)\ leq(X,Y) <=> true.
+leq_transitivity @ leq(X,Y), leq(Y,Z) ==> leq(X,Z).
+leq(A,B), leq(B,C), leq(C,A).

@@ -1,0 +1,17 @@
+	// change only search in orginal code
+zero1 @ add(0,Y,Z) <=> Y == Z.
+zero2 @ add(X,0,Z) <=> X == Z.
+zero3 @ add(X,Y,0) <=> X == 0, Y == 0 .
+
+same1 @ add(X,E,E) <=> X == 0 .
+same2 @ add(E,Y,E) <=> Y == 0 .
+
+succ1 @ add(s(X),Y,Z) <=> Z == s(W), add(X,Y,W).
+succ2 @ add(X,s(Y),Z) <=> Z == s(W), add(X,Y,W).
+succ3 @ add(X,X,s(Z)) <=> Z == s(W), X == s(Y), add(Y,Y,W).
+
+// search @ add(X,Y,s(Z)) <=> true | add(X1,Y1,Z), (X = s(X1),Y = Y1 ; X = X1,Y = s(Y1)).
+    
+search @ add(X,Y,s(Z)) <=> add(X1,Y1,Z), X == s(X1),Y == Y1.
+search @ add(X,Y,s(Z)) <=> add(X1,Y1,Z), X == X1,Y == s(Y1).
+add(X,Y,s(s(0))).

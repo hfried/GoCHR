@@ -12,6 +12,7 @@ import (
 	"fmt"
 	. "github.com/hfried/GoCHR/src/engine/parser"
 	. "github.com/hfried/GoCHR/src/engine/terms"
+	"io"
 	"os"
 	"strings"
 	sc "text/scanner"
@@ -61,6 +62,19 @@ func ParseStringCHRRulesGoals(src string) (ok bool) {
 	var s sc.Scanner
 	// Initialize the scanner.
 	s.Init(strings.NewReader(src))
+
+	s.Error = Err
+
+	ok = parseRules(&s)
+	return
+}
+
+func ParseFileCHRRulesGoals(inFile io.Reader) (ok bool) {
+	// src is the input that we want to tokenize.
+	// var s sc.Scanner
+	var s sc.Scanner
+	// Initialize the scanner.
+	s.Init(inFile)
 
 	s.Error = Err
 
@@ -678,6 +692,62 @@ func printCHRStore(h string) {
 		TraceHeadln(1, 0, h, " Built-In Store: []")
 	} else {
 		Traceln(1, "]")
+	}
+
+}
+
+func WriteCHRStore(out *os.File) {
+	switch Result {
+	case REmpty:
+		// if h != "New goal:" {
+		fmt.Fprintf(out, "No rule fired (!)")
+		return
+		// }
+	case RFalse:
+		fmt.Fprintf(out, "false")
+		return
+	case RTrue:
+		fmt.Fprintf(out, "true")
+		return
+	}
+	// default: Result == RStore
+	first := true
+	for _, aChr := range CHRstore {
+		for _, con := range aChr.varArg {
+			if !con.IsDeleted {
+				if first {
+					fmt.Fprintf(out, "[%s", con.String())
+					first = false
+				} else {
+					fmt.Fprintf(out, ", %s", con.String())
+				}
+			}
+		}
+	}
+	if first {
+		fmt.Fprintf(out, "[]\n")
+
+	} else {
+		fmt.Fprintf(out, "]\n")
+	}
+
+	first = true
+	for _, aChr := range BuiltInStore {
+		for _, con := range aChr.varArg {
+			if !con.IsDeleted {
+				if first {
+					fmt.Fprintf(out, "[%s", con.String())
+					first = false
+				} else {
+					fmt.Fprintf(out, ", %s", con.String())
+				}
+			}
+		}
+	}
+	if first {
+		fmt.Fprintf(out, "[]\n")
+	} else {
+		fmt.Fprintf(out, "]\n")
 	}
 
 }
