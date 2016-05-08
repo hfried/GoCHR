@@ -47,6 +47,10 @@ func Err(s *sc.Scanner, str string) {
 	}
 }
 
+func Err1(s *sc.Scanner, format string, a ...interface{}) {
+	Err(s, fmt.Sprintf(format, a...))
+}
+
 func readBIConstraint(s *sc.Scanner) (t Term, tok rune, ok bool) {
 	if trace {
 		fmt.Printf("--> readBIConstraint : \n")
