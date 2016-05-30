@@ -115,6 +115,7 @@ func parseEvalRules(s *sc.Scanner) (ok bool) {
 				tok, rule, goals, ok = parseKeepHead1(s, tok, fmt.Sprintf("(%d)", nameNr), t)
 				nameNr++
 			}
+			TraceHeadln(4, 4, " after parseKeep, rule", rule, ", goals: ", goals, "ok: ", ok)
 			if rule != nil {
 				if newGoals {
 					InitStore()
@@ -136,12 +137,14 @@ func parseEvalRules(s *sc.Scanner) (ok bool) {
 					addRefConstraintToStore(g)
 				}
 
-				CHRtrace = 0
 				CHRsolver()
 
-				CHRtrace = 1
-				printCHRStore("Result: ")
-				CHRtrace = 0
+				if CHRtrace == 0 {
+					printCHRStore("Result: ")
+					CHRtrace = 0
+				} else {
+					printCHRStore("Result: ")
+				}
 			}
 
 			//	CHRsolver()
@@ -261,12 +264,17 @@ func parseKeepHead(s *sc.Scanner, tok rune, name string) (rune, *chrRule, CList,
 // - t: the first predicate
 func parseKeepHead1(s *sc.Scanner, tok rune, name string, t Term) (tok1 rune, rule *chrRule, cl CList, ok bool) {
 
-	if t.Type() != CompoundType {
+	if t.Type() != CompoundType && t.Type() != VariableType {
+		//		if t.Type == VariableType {
+		//			t = Compound{Functor: "0", Args: []Term{t}, Prio: 7}
+		//		} else {
 		Err(s, fmt.Sprintf("Missing a predicate in rule %s (not %s)", name, t.String()))
 		return tok, nil, nil, false
 	}
-	keepList := List{t}
+	//	}
 
+	keepList := List{t}
+	TraceHeadln(4, 4, " Head (in parseKeepHead1): ", t)
 	for tok == ',' {
 		tok = s.Scan()
 		if tok != sc.Ident {
@@ -277,6 +285,7 @@ func parseKeepHead1(s *sc.Scanner, tok rune, name string, t Term) (tok1 rune, ru
 		if !ok {
 			return tok, nil, nil, ok
 		}
+		TraceHeadln(4, 4, " Head (in parseKeepHead1): ", t)
 		keepList = append(keepList, t)
 	}
 
@@ -628,10 +637,15 @@ func prove2Clist(ty parseType, name string, t Term) (cl CList, ok bool) {
 	case ListType:
 
 		for _, t1 := range t.(List) {
-			if t1.Type() != CompoundType {
-				return prove2Clist(ty, name, t1)
+			if ty == ParseHead && t1.Type() == VariableType {
+				t1 = Compound{Functor: "", Args: []Term{t1}}
+			} else {
+				if t1.Type() != CompoundType {
+					return prove2Clist(ty, name, t1)
+				}
 			}
 			t2 := t1.(Compound)
+
 			if ty == ParseHead {
 				t2.EMap = &EnvMap{}
 			}
@@ -798,6 +812,16 @@ func printCHRStore(h string) {
 				}
 			}
 		}
+		for _, con := range aChr.noArg {
+			if !con.IsDeleted {
+				if first {
+					TraceHead(1, 0, h, " CHR-Store: [", con.String())
+					first = false
+				} else {
+					Trace(1, ", ", con.String())
+				}
+			}
+		}
 	}
 	if first {
 		TraceHeadln(1, 0, h, " CHR-Store: []")
@@ -808,6 +832,16 @@ func printCHRStore(h string) {
 	first = true
 	for _, aChr := range BuiltInStore {
 		for _, con := range aChr.varArg {
+			if !con.IsDeleted {
+				if first {
+					TraceHead(1, 0, h, " Built-In Store: [", con.String())
+					first = false
+				} else {
+					Trace(1, ", ", con.String())
+				}
+			}
+		}
+		for _, con := range aChr.noArg {
 			if !con.IsDeleted {
 				if first {
 					TraceHead(1, 0, h, " Built-In Store: [", con.String())
@@ -853,6 +887,16 @@ func WriteCHRStore(out *os.File) {
 				}
 			}
 		}
+		for _, con := range aChr.noArg {
+			if !con.IsDeleted {
+				if first {
+					fmt.Fprintf(out, "[%s", con.String())
+					first = false
+				} else {
+					fmt.Fprintf(out, ", %s", con.String())
+				}
+			}
+		}
 	}
 	if first {
 		fmt.Fprintf(out, "[]\n")
@@ -864,6 +908,16 @@ func WriteCHRStore(out *os.File) {
 	first = true
 	for _, aChr := range BuiltInStore {
 		for _, con := range aChr.varArg {
+			if !con.IsDeleted {
+				if first {
+					fmt.Fprintf(out, "[%s", con.String())
+					first = false
+				} else {
+					fmt.Fprintf(out, ", %s", con.String())
+				}
+			}
+		}
+		for _, con := range aChr.noArg {
 			if !con.IsDeleted {
 				if first {
 					fmt.Fprintf(out, "[%s", con.String())
@@ -893,6 +947,11 @@ func chr2CList() (l CList) {
 				l = append(l, con)
 			}
 		}
+		for _, con := range aChr.noArg {
+			if !con.IsDeleted {
+				l = append(l, con)
+			}
+		}
 	}
 	return
 }
@@ -901,6 +960,11 @@ func bi2CList() (l CList) {
 	l = CList{}
 	for _, aChr := range BuiltInStore {
 		for _, con := range aChr.varArg {
+			if !con.IsDeleted {
+				l = append(l, con)
+			}
+		}
+		for _, con := range aChr.noArg {
 			if !con.IsDeleted {
 				l = append(l, con)
 			}
@@ -916,6 +980,11 @@ func chr2List() (l List) {
 	}
 	for _, aChr := range CHRstore {
 		for _, con := range aChr.varArg {
+			if !con.IsDeleted {
+				l = append(l, *con)
+			}
+		}
+		for _, con := range aChr.noArg {
 			if !con.IsDeleted {
 				l = append(l, *con)
 			}
@@ -959,6 +1028,16 @@ func chr2string() (str string) {
 				}
 			}
 		}
+		for _, con := range aChr.noArg {
+			if !con.IsDeleted {
+				if first {
+					str = "[" + con.String()
+					first = false
+				} else {
+					str = str + ", " + con.String()
+				}
+			}
+		}
 	}
 	if first {
 		str = "[]"
@@ -972,6 +1051,16 @@ func bi2string() (str string) {
 	first := true
 	for _, aChr := range BuiltInStore {
 		for _, con := range aChr.varArg {
+			if !con.IsDeleted {
+				if first {
+					str = "[" + con.String()
+					first = false
+				} else {
+					str = str + ", " + con.String()
+				}
+			}
+		}
+		for _, con := range aChr.noArg {
 			if !con.IsDeleted {
 				if first {
 					str = "[" + con.String()

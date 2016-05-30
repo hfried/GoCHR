@@ -7,6 +7,7 @@
 package chr
 
 import (
+	"fmt"
 	. "github.com/hfried/GoCHR/src/engine/parser"
 	"testing"
 )
@@ -132,7 +133,7 @@ func TestCHRRule00(t *testing.T) {
 //	#result: X == 2 .
 	`)
 	if !ok {
-		t.Error("TestCHRRule00 fails, Error in parse string")
+		t.Error("TestCHRRule00 fails")
 	}
 }
 
@@ -147,7 +148,7 @@ func TestCHRRule01(t *testing.T) {
 	#result: prime(19), prime(17), prime(13), prime(11), prime(7), prime(5), prime(3), prime(2).
 	`)
 	if !ok {
-		t.Error("TestCHRRule01 fails, Error in parse string")
+		t.Error("TestCHRRule01 fails")
 	}
 }
 
@@ -204,7 +205,7 @@ func TestCHRRule02(t *testing.T) {
 	#result: gcd(6), L2:=6, L4:=6, L6:=0 . 
 	`)
 	if !ok {
-		t.Error("TestCHRRule02 fails, Error in parse string")
+		t.Error("TestCHRRule02 fails")
 	}
 }
 
@@ -219,7 +220,7 @@ func TestCHRRule04(t *testing.T) {
     #result: upto(20), fib(0,1), fib(1,1), fib(2,2), fib(3,3), fib(4,5), fib(5,8), fib(6,13), fib(7,21), fib(8,34), fib(9,55), fib(10,89), fib(11,144), fib(12,233), fib(13,377), fib(14,610), fib(15,987), fib(16,1597), fib(17,2584), fib(18,4181), fib(19,6765), fib(20,10946).
 `)
 	if !ok {
-		t.Error("TestCHRRule04a fails, Error in parse string")
+		t.Error("TestCHRRule04a fails")
 	}
 
 }
@@ -235,7 +236,7 @@ func TestCHRRule05(t *testing.T) {
 	#result: A==C, B==C .
 	`)
 	if !ok {
-		t.Error("TestCHRRule05a fails, Error in parse string")
+		t.Error("TestCHRRule05a fails")
 	}
 }
 
@@ -244,6 +245,7 @@ func TestCHRRule06(t *testing.T) {
 	ok := ParseStringCHRRulesGoals(`
 	data1 @ data() ==> edge(berlin, 230, wolfsburg), edge(hannover, 89, wolfsburg), edge(hannover, 108, bielefeld), edge(bielefeld, 194, köln).
 	data2 @ data() ==> edge(berlin,259, jena), edge(jena,55, erfurt), edge(erfurt,205,giessen), edge(giessen,158,köln), edge(köln, 85, aachen).
+	data3 @ data() <=> true .
 	source @ source(V) ==> dist(V, 0).
 	del @ dist(V,D1) \ dist(V, D2) <=> D1 <= D2 | true.
 	dist_plus1 @ dist(V,D1), edge(V, D2, V2) ==> dist(V2, D1+D2).
@@ -253,7 +255,7 @@ func TestCHRRule06(t *testing.T) {
 	#result: source(berlin), dist(berlin,0), dist(wolfsburg,230), dist(jena,259), dist(erfurt,314), dist(giessen,519), dist(hannover,319), dist(bielefeld,427), dist(köln,621), dist(aachen,706) .
 `)
 	if !ok {
-		t.Error("TestCHRRule06 fails, Error in parse string")
+		t.Error("TestCHRRule06 fails")
 	}
 }
 
@@ -263,6 +265,7 @@ func TestCHRRule07(t *testing.T) {
 
 	data1 @ data() ==> edge(berlin, 230, wolfsburg), edge(hannover, 89, wolfsburg), edge(hannover, 108, bielefeld), edge(bielefeld, 194, köln).
 	data2 @ data() ==> edge(berlin,259, jena), edge(jena,55, erfurt), edge(erfurt,205,giessen), edge(giessen,158,köln), edge(köln, 85, aachen).
+    data3 @ data() <=> true .
 	source @ source(V) ==> dist(V, [V], 0).
 	del @ dist(V, L, D1) \ dist(V, M, D2) <=> D1 <= D2 | true.
 	dist_plus1 @ dist(V, L, D1), edge(V, D2, V2) ==> dist(V2,[V2|L], D1+D2).
@@ -272,7 +275,7 @@ func TestCHRRule07(t *testing.T) {
 	#result: source(berlin), dist(berlin,[berlin],0), dist(wolfsburg,[wolfsburg, berlin],230), dist(jena,[jena, berlin],259), dist(erfurt,[erfurt, jena, berlin],314), dist(giessen,[giessen, erfurt, jena, berlin],519), dist(hannover,[hannover, wolfsburg, berlin],319), dist(bielefeld,[bielefeld, hannover, wolfsburg, berlin],427), dist(köln,[köln, bielefeld, hannover, wolfsburg, berlin],621), dist(aachen,[aachen, köln, bielefeld, hannover, wolfsburg, berlin],706) .
 `)
 	if !ok {
-		t.Error("TestCHRRule07 fails, Error in parse string")
+		t.Error("TestCHRRule07 fails")
 	}
 }
 
@@ -282,6 +285,7 @@ func TestCHRRule08(t *testing.T) {
 
 	data1 @ data() ==> edge(berlin, 230, wolfsburg), edge(hannover, 89, wolfsburg), edge(hannover, 108, bielefeld), edge(bielefeld, 194, köln).
 	data2 @ data() ==> edge(berlin,259, jena), edge(jena,55, erfurt), edge(erfurt,205,giessen), edge(giessen,158,köln), edge(köln, 85, aachen).
+    data3 @ data() <=> true .
 	source @ source(V) ==> dist([V], 0).
 	del @ dist([V|L], D1) \ dist([V|M], D2) <=> D1 <= D2 | true.
 	dist_plus_a@ dist([V|L], D1), edge(V, D2, V2) ==> dist([V2, V|L], D1+D2).
@@ -291,7 +295,7 @@ func TestCHRRule08(t *testing.T) {
 	#result: source(berlin), dist([berlin],0), dist([wolfsburg, berlin],230), dist([jena, berlin],259), dist([erfurt, jena, berlin],314), dist([giessen, erfurt, jena, berlin],519), dist([hannover, wolfsburg, berlin],319), dist([bielefeld, hannover, wolfsburg, berlin],427), dist([köln, bielefeld, hannover, wolfsburg, berlin],621), dist([aachen, köln, bielefeld, hannover, wolfsburg, berlin],706).
 `)
 	if !ok {
-		t.Error("TestCHRRule08 fails, Error in parse string")
+		t.Error("TestCHRRule08 fails")
 	}
 }
 
@@ -301,6 +305,7 @@ func TestCHRRule09(t *testing.T) {
 
 	data1 @ data() ==> edge(berlin, 230, wolfsburg), edge(hannover, 89, wolfsburg), edge(hannover, 108, bielefeld), edge(bielefeld, 194, köln).
 	data2 @ data() ==> edge(berlin,259, jena), edge(jena,55, erfurt), edge(erfurt,205,giessen), edge(giessen,158,köln), edge(köln, 85, aachen).
+    data3 @ data() <=> true .
 	source @ source(V) ==> dist([V], 0).
 	del @ dist([V|L], D1) \ dist([V|M], D2) <=> D1 <= D2 | true.
 	dist_plus_a@ dist([V|L], D1), edge(V, D2, V2) ==> dist([V2, V|L], D1+D2).
@@ -310,7 +315,7 @@ func TestCHRRule09(t *testing.T) {
 	#result: source(berlin), dist([berlin],0), dist([wolfsburg, berlin],230), dist([jena, berlin],259), dist([erfurt, jena, berlin],314), dist([giessen, erfurt, jena, berlin],519), dist([hannover, wolfsburg, berlin],319), dist([bielefeld, hannover, wolfsburg, berlin],427), dist([köln, bielefeld, hannover, wolfsburg, berlin],621), dist([aachen, köln, bielefeld, hannover, wolfsburg, berlin],706).
 `)
 	if !ok {
-		t.Error("TestCHRRule09 fails, Error in parse string")
+		t.Error("TestCHRRule09 fails")
 	}
 }
 
@@ -382,6 +387,143 @@ add(X,X,s(s(0))).
 #result: X == s(0) .
 `)
 	if !ok {
-		t.Error("TestCHRRule10 fails, Error in parse string")
+		t.Error("TestCHRRule10 fails")
+	}
+}
+
+func TestCHRRule11(t *testing.T) {
+	CHRtrace = 1
+	ok := ParseStringCHRRulesGoals(`
+modus_ponens @ implies(P,Q), P ==> Q.
+implies(farbe(rot), farbe(blau)), farbe(rot) .
+#result: implies(farbe(rot), farbe(blau)), farbe(rot), farbe(blau) .
+`)
+
+	for _, rule := range CHRruleStore {
+		fmt.Printf(" Rule: %s @ ", rule.name)
+		for _, h := range rule.keepHead {
+			fmt.Printf("%s, ", h)
+		}
+		fmt.Printf("\\ ")
+		for _, k := range rule.delHead {
+			fmt.Printf("%s, ", k)
+		}
+		fmt.Printf(" <=> ")
+		for _, g := range rule.guard {
+			fmt.Printf("%s, ", g)
+		}
+		fmt.Printf(" | ")
+		for _, b := range rule.body {
+			fmt.Printf("%s, ", b)
+		}
+		fmt.Printf("\n")
+	}
+
+	if !ok {
+		t.Error("TestCHRRule11 fails")
+	}
+}
+
+func TestCHRRule12(t *testing.T) {
+	CHRtrace = 1
+	ok := ParseStringCHRRulesGoals(`
+modus_ponens @ implies(P,Q), P <=> Q.
+implies(farbe(rot), farbe(blau)), farbe(rot) .
+#result: farbe(blau) .
+`)
+
+	if !ok {
+		t.Error("TestCHRRule12 fails")
+	}
+}
+
+func TestCHRRule13(t *testing.T) {
+	CHRtrace = 1
+	ok := ParseStringCHRRulesGoals(`
+modus_ponens @ implies(P,Q), P ==> Q.
+implies(farbe(rot), farbe(blau)), implies(farbe(blau),farbe(grün)), farbe(rot) .
+#result: implies(farbe(rot), farbe(blau)), implies(farbe(blau),farbe(grün)), farbe(rot), farbe(blau), farbe(grün) .
+`)
+
+	if !ok {
+		t.Error("TestCHRRule13 fails")
+	}
+}
+
+func TestCHRRule14(t *testing.T) {
+	CHRtrace = 1
+	ok := ParseStringCHRRulesGoals(`
+modus_ponens @ implies(P,Q), P ==> Q.
+implies(rot(), blau()), rot() .
+#result: implies(rot(), blau()), rot(), blau() .
+`)
+
+	if !ok {
+		t.Error("TestCHRRule14 fails")
+	}
+}
+
+func TestCHRRule15(t *testing.T) {
+	CHRtrace = 1
+	ok := ParseStringCHRRulesGoals(`
+modus_ponens @ implies(P,Q), P <=> Q.
+implies(rot(), blau()), rot() .
+#result: blau() .
+`)
+
+	if !ok {
+		t.Error("TestCHRRule15 fails")
+	}
+}
+
+func TestCHRRule16(t *testing.T) {
+	CHRtrace = 1
+	ok := ParseStringCHRRulesGoals(`
+modus_ponens @ gelb(), implies(P,Q), P ==> Q.
+implies(rot(), blau()), implies(blau(),grün()), rot(), gelb() .
+#result: implies(rot(), blau()), implies(blau(),grün()), rot(), gelb(), blau(), grün() .
+`)
+
+	if !ok {
+		t.Error("TestCHRRule16 fails")
+	}
+}
+
+func TestCHRRule17(t *testing.T) {
+	CHRtrace = 1
+	ok := ParseStringCHRRulesGoals(`
+modus_ponens @ implies(P,Q), P ==> Q.
+implies(rot, blau), rot .
+#result: implies(rot, blau), rot, blau .
+`)
+
+	if !ok {
+		t.Error("TestCHRRule17 fails")
+	}
+}
+
+func TestCHRRule18(t *testing.T) {
+	CHRtrace = 1
+	ok := ParseStringCHRRulesGoals(`
+modus_ponens @ implies(P,Q), P <=> Q.
+implies(rot, blau), rot .
+#result: blau .
+`)
+
+	if !ok {
+		t.Error("TestCHRRule18 fails")
+	}
+}
+
+func TestCHRRule19(t *testing.T) {
+	CHRtrace = 1
+	ok := ParseStringCHRRulesGoals(`
+modus_ponens @ gelb, implies(P,Q), P ==> Q.
+implies(rot, blau), implies(blau,grün), rot, gelb .
+#result: implies(rot, blau), implies(blau,grün), rot, gelb, blau, grün .
+`)
+
+	if !ok {
+		t.Error("TestCHRRule19 fails")
 	}
 }

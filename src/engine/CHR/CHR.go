@@ -116,6 +116,7 @@ func NewArgCHR() *argCHR {
 }
 
 func addGoal1(g *Compound, s store) {
+
 	aArg, ok := s[g.Functor]
 	if !ok {
 		aArg = NewArgCHR()
@@ -151,7 +152,7 @@ func addGoal1(g *Compound, s store) {
 	case ListType:
 		aArg.listArg = append(aArg.listArg, g)
 	}
-	aArg.varArg = append(aArg.varArg, g) // a veriable match to all types
+	aArg.varArg = append(aArg.varArg, g) // a variable match to all types
 }
 
 func addConstraintToStore(g Compound) {
@@ -511,10 +512,30 @@ func matchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env Bind
 	var env2 Bindings
 	var mark bool
 	head := headList[it]
+	head2 := head
 	chrList := readProperConstraintsFromCHR_Store(head, env)
 	len_chr := len(chrList)
 	if len_chr == 0 {
-		return false
+		// variabel in head
+		if head.Functor == "" {
+			// ###
+			b, ok := GetBinding(head.Args[0].(Variable), env)
+			if !ok {
+				return false
+			}
+			if b.Type() != CompoundType {
+				return false
+			}
+			bc := b.(Compound)
+			head2 = &bc
+			chrList = readProperConstraintsFromCHR_Store(head2, env)
+			len_chr = len(chrList)
+			if len_chr == 0 {
+				return false
+			}
+		} else {
+			return false
+		}
 	}
 	// begin check the next head
 	lastDelHead := it+1 == nt
@@ -580,7 +601,7 @@ func matchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env Bind
 	if lastHead {
 		for ok, ic := false, ie; !ok && ic < len_chr; ic++ {
 			chr := chrList[ic]
-			env2, ok, mark = markCHRAndMatchDelHead(r.id, head, chr, env)
+			env2, ok, mark = markCHRAndMatchDelHead(r.id, head2, chr, env)
 			if ok {
 				senv = append(senv, env2)
 				ok = checkGuards(r, env2)
@@ -601,7 +622,7 @@ func matchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env Bind
 	if lastDelHead {
 		for ok, ic := false, ie; !ok && ic < len_chr; ic++ {
 			chr := chrList[ic]
-			env2, ok, mark = markCHRAndMatchDelHead(r.id, head, chr, env)
+			env2, ok, mark = markCHRAndMatchDelHead(r.id, head2, chr, env)
 			if ok {
 				senv = append(senv, env2)
 
@@ -625,7 +646,7 @@ func matchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env Bind
 
 		chr := chrList[ic]
 
-		env2, ok, mark = markCHRAndMatchDelHead(r.id, head, chr, env) // mark chr and Match, if fail unmark chr
+		env2, ok, mark = markCHRAndMatchDelHead(r.id, head2, chr, env) // mark chr and Match, if fail unmark chr
 		if ok {
 			senv = append(senv, env2)
 			ok = matchDelHead(r, headList, it+1, nt, ic, env2)
@@ -652,12 +673,35 @@ func traceMatchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env
 	var env2 Bindings
 	var mark bool
 	head := headList[it]
+	head2 := head
 	chrList := readProperConstraintsFromCHR_Store(head, env)
 	TraceHead(3, 3, "match Del-Head (", ienv, ") ", head, " with [")
 	len_chr := len(chrList)
 	if len_chr == 0 {
-		Traceln(3, "]")
-		return false
+		// variabel in head
+		if head.Functor == "" {
+			// ###
+			b, ok := GetBinding(head.Args[0].(Variable), env)
+			if !ok {
+				Traceln(3, "]")
+				return false
+			}
+			if b.Type() != CompoundType {
+				Traceln(3, "]")
+				return false
+			}
+			bc := b.(Compound)
+			head2 = &bc
+			chrList = readProperConstraintsFromCHR_Store(head2, env)
+			len_chr = len(chrList)
+			if len_chr == 0 {
+				Traceln(3, "]")
+				return false
+			}
+		} else {
+			Traceln(3, "]")
+			return false
+		}
 	}
 	// begin trace
 	first := true
@@ -757,7 +801,7 @@ func traceMatchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env
 		for ok, ic := false, ie; !ok && ic < len_chr; ic++ {
 			chr := chrList[ic]
 			// env = lateRenameVars(env)
-			env2, ok, mark = traceMarkCHRAndMatchDelHead(r.id, head, chr, env)
+			env2, ok, mark = traceMarkCHRAndMatchDelHead(r.id, head2, chr, env)
 			if ok {
 				senv = append(senv, env2)
 				// trace senv changes
@@ -787,7 +831,7 @@ func traceMatchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env
 		for ok, ic := false, ie; !ok && ic < len_chr; ic++ {
 			chr := chrList[ic]
 			// env = lateRenameVars(env)
-			env2, ok, mark = traceMarkCHRAndMatchDelHead(r.id, head, chr, env)
+			env2, ok, mark = traceMarkCHRAndMatchDelHead(r.id, head2, chr, env)
 			if ok {
 				senv = append(senv, env2)
 				// trace senv changes
@@ -818,7 +862,7 @@ func traceMatchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env
 
 		chr := chrList[ic]
 		// env = lateRenameVars(env)  // ???
-		env2, ok, mark = traceMarkCHRAndMatchDelHead(r.id, head, chr, env) // mark chr and Match, if fail unmark chr
+		env2, ok, mark = traceMarkCHRAndMatchDelHead(r.id, head2, chr, env) // mark chr and Match, if fail unmark chr
 		if ok {
 			senv = append(senv, env2)
 			// trace senv changes
@@ -945,11 +989,32 @@ func matchKeepHead(r *chrRule, his []*big.Int, headList CList, it int, nt int, i
 	var env2 Bindings
 	var mark bool
 	head := headList[it]
+	head2 := head
 	chrList := readProperConstraintsFromCHR_Store(head, env)
 	len_chr := len(chrList)
 	if len_chr == 0 {
-		return false
+		// variabel in head
+		if head.Functor == "" {
+			// ###
+			b, ok := GetBinding(head.Args[0].(Variable), env)
+			if !ok {
+				return false
+			}
+			if b.Type() != CompoundType {
+				return false
+			}
+			bc := b.(Compound)
+			head2 = &bc
+			chrList = readProperConstraintsFromCHR_Store(head2, env)
+			len_chr = len(chrList)
+			if len_chr == 0 {
+				return false
+			}
+		} else {
+			return false
+		}
 	}
+
 	// begin check the next head
 	lastKeepHead := it+1 == nt
 	// End next check next head
@@ -989,7 +1054,7 @@ func matchKeepHead(r *chrRule, his []*big.Int, headList CList, it int, nt int, i
 	if lastKeepHead {
 		for ok, ic := false, ie; !ok && ic < len_chr; ic++ {
 			chr := chrList[ic]
-			env2, ok, mark = markCHRAndMatchKeepHead(r.id, head, chr, env)
+			env2, ok, mark = markCHRAndMatchKeepHead(r.id, head2, chr, env)
 			if ok {
 				senv = append(senv, env2)
 				ok = checkGuards(r, env2)
@@ -1013,7 +1078,7 @@ func matchKeepHead(r *chrRule, his []*big.Int, headList CList, it int, nt int, i
 
 		chr := chrList[ic]
 
-		env2, ok, mark = markCHRAndMatchKeepHead(r.id, head, chr, env) // mark chr and Match, if fail unmark chr
+		env2, ok, mark = markCHRAndMatchKeepHead(r.id, head2, chr, env) // mark chr and Match, if fail unmark chr
 		if ok {
 			senv = append(senv, env2)
 
@@ -1041,12 +1106,36 @@ func traceMatchKeepHead(r *chrRule, his []*big.Int, headList CList, it int, nt i
 	var env2 Bindings
 	var mark bool
 	head := headList[it]
+	head2 := head
 	chrList := readProperConstraintsFromCHR_Store(head, env)
 	TraceHead(4, 3, "match keep-Head (", ienv, ") ", head, " with [")
 	len_chr := len(chrList)
 	if len_chr == 0 {
-		Traceln(4, "] - empty chr")
-		return false
+		// variabel in head
+		if head.Functor == "" {
+			// ###
+			Trace(4, " {HeadVariable=", head.Args[0].(Variable), "}")
+			b, ok := GetBinding(head.Args[0].(Variable), env)
+			if !ok {
+				Traceln(3, "] - empty chr (Variable not bind)")
+				return false
+			}
+			if b.Type() != CompoundType {
+				Traceln(3, "] - empty chr (Variable!=CompoundType)", b)
+				return false
+			}
+			bc := b.(Compound)
+			head2 = &bc
+			chrList = readProperConstraintsFromCHR_Store(head2, env)
+			len_chr = len(chrList)
+			if len_chr == 0 {
+				Traceln(3, "] - empty chr (Variable=) ", b)
+				return false
+			}
+		} else {
+			Traceln(3, "] - empty chr")
+			return false
+		}
 	}
 	// begin trace
 	first := true
@@ -1124,7 +1213,7 @@ func traceMatchKeepHead(r *chrRule, his []*big.Int, headList CList, it int, nt i
 	if lastKeepHead {
 		for ok, ic := false, ie; !ok && ic < len_chr; ic++ {
 			chr := chrList[ic]
-			env2, ok, mark = traceMarkCHRAndMatchKeepHead(r.id, head, chr, env)
+			env2, ok, mark = traceMarkCHRAndMatchKeepHead(r.id, head2, chr, env)
 			if ok {
 				senv = append(senv, env2)
 				// trace senv changes
@@ -1156,7 +1245,7 @@ func traceMatchKeepHead(r *chrRule, his []*big.Int, headList CList, it int, nt i
 
 		chr := chrList[ic]
 
-		env2, ok, mark = traceMarkCHRAndMatchKeepHead(r.id, head, chr, env) // mark chr and Match, if fail unmark chr
+		env2, ok, mark = traceMarkCHRAndMatchKeepHead(r.id, head2, chr, env) // mark chr and Match, if fail unmark chr
 		if ok {
 			senv = append(senv, env2)
 			// trace senv changes
@@ -1397,6 +1486,15 @@ func substituteStores(biEnv Bindings) {
 	newCHR := []Compound{}
 	for _, aChr := range CHRstore {
 		for _, con := range aChr.varArg {
+			if !con.IsDeleted {
+				con1, ok := SubstituteBiEnv(*con, biEnv)
+				if ok && con1.Type() == CompoundType {
+					newCHR = append(newCHR, con1.(Compound))
+					con.IsDeleted = true
+				}
+			}
+		}
+		for _, con := range aChr.noArg {
 			if !con.IsDeleted {
 				con1, ok := SubstituteBiEnv(*con, biEnv)
 				if ok && con1.Type() == CompoundType {

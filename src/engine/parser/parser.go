@@ -604,7 +604,7 @@ func Factor_name(name string, s *sc.Scanner, tok1 rune) (t Term, tok rune, ok bo
 	if s.Peek() == ')' {
 		s.Scan()
 
-		return Compound{Functor: name, Args: []Term{}}, s.Scan(), true
+		return Compound{Functor: name, Args: []Term{}, HasArgs: true}, s.Scan(), true
 	}
 	tok = ','
 	pos := s.Pos()
@@ -724,7 +724,8 @@ func bi_0(n string, tk rune) (t Term, tok rune, ok bool) {
 		t = NewVariable(n)
 		return
 	} else {
-		t = Atom(n)
+		// t = Atom(n)
+		t = Compound{Functor: n, Args: []Term{}}
 		return
 	}
 }

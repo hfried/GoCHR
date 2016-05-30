@@ -55,6 +55,7 @@ type Compound struct {
 	identifyOccurVars bool
 	IsDeleted         bool
 	Args              []Term
+	HasArgs           bool
 }
 
 type List []Term
@@ -108,7 +109,9 @@ func CopyCompound(c Compound) (c1 Compound) {
 		occurVars:         c.occurVars,
 		identifyOccurVars: c.identifyOccurVars,
 		IsDeleted:         c.IsDeleted,
-		Args:              []Term{}}
+		Args:              []Term{},
+		HasArgs:			c.HasArgs,
+	}
 	args := []Term{}
 	for _, a := range c.Args {
 		args = append(args, a)
@@ -365,6 +368,9 @@ func (t Compound) String() string {
 			oldarg = arg
 		}
 		return "[" + strings.Join(args, ",") + " | " + oldarg.String() + "]"
+	}
+	if t.Arity() == 0 {
+		if t.HasArgs { return t.Functor + "()"} else { return t.Functor }
 	}
 	args := []string{}
 	for _, arg := range t.Args {
