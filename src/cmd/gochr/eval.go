@@ -65,15 +65,15 @@ func evalCmd() {
 			return
 		}
 	}
-
-	ok := chr.ParseFileCHRRulesGoals(inFile)
+	rs := chr.MakeRuleStore()
+	ok := rs.ParseFileCHRRulesGoals(inFile)
 	if !ok {
 		log.Fatal(fmt.Errorf("%s\n", err))
 	}
 	parser.CHRtrace = 0
-	chr.CHRsolver()
+	chr.CHRsolver(rs)
 
 	parser.CHRtrace = 1
-	chr.WriteCHRStore(outFile)
+	chr.WriteCHRStore(rs, outFile)
 
 }

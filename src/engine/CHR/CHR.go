@@ -9,10 +9,11 @@
 package chr
 
 import (
-	//"fmt"
+	// "fmt"
+	"math/big"
+
 	. "github.com/hfried/GoCHR/src/engine/parser"
 	. "github.com/hfried/GoCHR/src/engine/terms"
-	"math/big"
 )
 
 // types
@@ -50,53 +51,120 @@ const (
 	RFalse
 )
 
-var Result resultType
+type RuleStore struct {
+	Result         resultType
+	CHRruleStore   []*chrRule
+	QueryVars      Vars
+	QueryStore     List
+	CHRstore       store
+	BuiltInStore   store
+	nextRuleId     int // = 0
+	emptyBinding   Bindings
+	RenameRuleVars *big.Int
+	chrCounter     *big.Int
+}
 
-var CHRruleStore []*chrRule
-
-var QueryVars Vars
-
-var QueryStore List
-
-var CHRstore store
-
-var BuiltInStore store
-
-var nextRuleId int = 0
-var emptyBinding Bindings
-
-var RenameRuleVars *big.Int
-
-var chrCounter *big.Int
 var bigOne = big.NewInt(1)
 
 // init, add and read CHR- and Build-In-store
 // -----------------------------------------
 
-func InitStore() {
-	Result = REmpty
-	InitRenamingVariables()
-	v := NewVariable("")
-	emptyBinding = &BindEle{Var: v, T: nil, Next: nil}
-	chrCounter = big.NewInt(0)
-	nextRuleId = 0
-	CHRruleStore = []*chrRule{}
-	CHRstore = store{}
-	BuiltInStore = store{}
-	QueryStore = List{}
-	QueryVars = Vars{}
+func MakeRuleStore() *RuleStore {
+	rs := &RuleStore{}
+	InitStore(rs)
+	return rs
 }
 
-func ClearCHRStore() {
-	Result = REmpty
+func (rs *RuleStore) AddRule(name string, keep []string, del []string, guard []string, body []string) error {
+
+	cKeepList, cDelList, cGuardList, bodyList, err := parseRule(name, keep, del, guard, body)
+
+	if err == nil {
+		rs.CHRruleStore = append(rs.CHRruleStore, &chrRule{name: name, id: rs.nextRuleId,
+			delHead:  cDelList,
+			keepHead: cKeepList,
+			guard:    cGuardList,
+			body:     bodyList})
+		rs.nextRuleId++
+	}
+	return err
+}
+
+func (rs *RuleStore) Infer(goals []string) (bool, []string, error) {
+	cGoals, err := parseGoals(goals)
+	if err == nil {
+		// fmt.Printf("** parseGoals OK\n")
+		ClearCHRStore(rs)
+		for _, g := range cGoals {
+			addRefConstraintToStore(rs, g)
+		}
+		CHRsolver(rs)
+
+		switch rs.Result {
+		case REmpty:
+			return true, []string{}, err
+		case RFalse:
+			return false, []string{}, err
+		case RTrue:
+			return true, []string{}, err
+		}
+		result := []string{}
+		// default: Result == RStore
+		for _, aChr := range rs.CHRstore {
+			for _, con := range aChr.varArg {
+				if !con.IsDeleted {
+					result = append(result, con.String())
+				}
+			}
+			for _, con := range aChr.noArg {
+				if !con.IsDeleted {
+					result = append(result, con.String())
+				}
+			}
+		}
+
+		for _, aChr := range rs.BuiltInStore {
+			for _, con := range aChr.varArg {
+				if !con.IsDeleted {
+					result = append(result, con.String())
+				}
+			}
+			for _, con := range aChr.noArg {
+				if !con.IsDeleted {
+					result = append(result, con.String())
+				}
+			}
+		}
+		return true, result, err
+	}
+	// fmt.Printf("** parseGoals  mit Fehler !!! \n")
+	return false, []string{}, err
+}
+
+func InitStore(rs *RuleStore) {
+	rs.Result = REmpty
 	InitRenamingVariables()
-	chrCounter = big.NewInt(0)
-	CHRstore = store{}
-	BuiltInStore = store{}
-	QueryStore = List{}
-	QueryVars = Vars{}
+	v := NewVariable("")
+	rs.emptyBinding = &BindEle{Var: v, T: nil, Next: nil}
+	rs.chrCounter = big.NewInt(0)
+	rs.nextRuleId = 0
+	rs.CHRruleStore = []*chrRule{}
+	rs.CHRstore = store{}
+	rs.BuiltInStore = store{}
+	rs.QueryStore = List{}
+	rs.QueryVars = Vars{}
+}
+
+func ClearCHRStore(rs *RuleStore) {
+	rs.Result = REmpty
+	InitRenamingVariables()
+	rs.chrCounter = big.NewInt(0)
+	rs.CHRstore = store{}
+	rs.BuiltInStore = store{}
+	rs.QueryStore = List{}
+	rs.QueryVars = Vars{}
 	// clear EMaps
-	for _, rule := range CHRruleStore {
+	for _, rule := range rs.CHRruleStore {
 		for _, del := range rule.delHead {
 			del.EMap = &EnvMap{}
 		}
@@ -155,31 +223,31 @@ func addGoal1(g *Compound, s store) {
 	aArg.varArg = append(aArg.varArg, g) // a variable match to all types
 }
 
-func addConstraintToStore(g Compound) {
-	addRefConstraintToStore(&g)
+func addConstraintToStore(rs *RuleStore, g Compound) {
+	addRefConstraintToStore(rs, &g)
 }
-func addRefConstraintToStore(g *Compound) {
+func addRefConstraintToStore(rs *RuleStore, g *Compound) {
 	// TraceHeadln(3, 3, " a) Counter %v \n", chrCounter)
-	g.Id = chrCounter
-	chrCounter = new(big.Int).Add(chrCounter, bigOne)
+	g.Id = rs.chrCounter
+	rs.chrCounter = new(big.Int).Add(rs.chrCounter, bigOne)
 	// TraceHeadln(3, 3, " b) Counter++ %v , Id: %v \n", chrCounter, g.Id)
 	if g.Prio == 0 {
-		addGoal1(g, CHRstore)
+		addGoal1(g, rs.CHRstore)
 	} else {
-		addGoal1(g, BuiltInStore)
+		addGoal1(g, rs.BuiltInStore)
 	}
 }
 
-func readProperConstraintsFromCHR_Store(t *Compound, env Bindings) CList {
-	argAtt, ok := CHRstore[t.Functor]
+func readProperConstraintsFromCHR_Store(rs *RuleStore, t *Compound, env Bindings) CList {
+	argAtt, ok := rs.CHRstore[t.Functor]
 	if ok {
 		return readProperConstraintsFromStore(t, argAtt, env)
 	}
 	return CList{}
 }
 
-func readProperConstraintsFromBI_Store(t *Compound, env Bindings) CList {
-	argAtt, ok := BuiltInStore[t.Functor]
+func readProperConstraintsFromBI_Store(rs *RuleStore, t *Compound, env Bindings) CList {
+	argAtt, ok := rs.BuiltInStore[t.Functor]
 	if ok {
 		return readProperConstraintsFromStore(t, argAtt, env)
 	}
@@ -247,30 +315,30 @@ var CurVarCounter *big.Int
 // Try all rules in 'CHRruleStore' with CHR-goals in CHR-store
 // until no rule fired.
 // CHRsolver used the trace- or no-trace function
-func CHRsolver() {
+func CHRsolver(rs *RuleStore) {
 
 	if CHRtrace != 0 {
-		printCHRStore("New goal:")
+		printCHRStore(rs, "New goal:")
 	}
 	i := 0
 	ruleFound := true
-	for ruleFound, i = true, 0; ruleFound && Result != RFalse && i < 100000; i++ {
+	for ruleFound, i = true, 0; ruleFound && rs.Result != RFalse && i < 100000; i++ {
 		// for ruleFound := true; ruleFound; {
 		ruleFound = false
-		for _, rule := range CHRruleStore {
-			RenameRuleVars = <-Counter
+		for _, rule := range rs.CHRruleStore {
+			rs.RenameRuleVars = <-Counter
 			if CHRtrace != 0 {
 				TraceHeadln(2, 1, "trial rule ", rule.name, "(ID: ", rule.id, ") @ ", rule.keepHead.String(),
 					" \\ ", rule.delHead.String(), " <=> ", rule.guard.String(), " | ", rule.body.String(), ".")
 
-				if TraceRuleFired(rule) {
+				if TraceRuleFired(rs, rule) {
 					TraceHeadln(1, 1, "rule ", rule.name, " fired (id: ", rule.id, ")")
 					ruleFound = true
 					break
 				}
 				TraceHeadln(2, 1, "rule ", rule.name, " NOT fired (id: ", rule.id, ")")
 			} else {
-				if pRuleFired(rule) {
+				if pRuleFired(rs, rule) {
 					ruleFound = true
 					break
 				}
@@ -278,17 +346,17 @@ func CHRsolver() {
 
 		}
 		if ruleFound && CHRtrace != 0 {
-			printCHRStore("Intermediary result:")
+			printCHRStore(rs, "Intermediary result:")
 		}
 	}
 	if i == 100000 {
 		TraceHeadln(0, 1, "!!! Time-out !!!")
 	}
 
-	reduceStore()
+	reduceStore(rs)
 
 	if CHRtrace > 1 {
-		printCHRStore("Result:")
+		printCHRStore(rs, "Result:")
 	}
 }
 
@@ -298,8 +366,12 @@ func equationSolver(arg1, arg2 Term, env Bindings) (Bindings, bool) {
 	lenv1 := len(v1)
 	lenv2 := len(v2)
 	if lenv1 == 0 && lenv2 == 0 {
+		if Equal(Eval(arg1), Eval(arg2)) {
+			return env, true
+		}
 		return env, false
 	}
+	// fmt.Printf("** In equationsSolver \n")
 	var v Variable
 	vFound := 0
 	for _, v3 := range v1 {
@@ -326,10 +398,12 @@ func equationSolver(arg1, arg2 Term, env Bindings) (Bindings, bool) {
 	if vFound == 2 {
 		arg1, arg2 = arg2, arg1
 	}
+	// fmt.Printf("** Vor eqSolver1 \n")
 	return eqSolver1(v, arg1, arg2, env)
 }
 
 func eqSolver1(v Variable, arg1, arg2 Term, env Bindings) (Bindings, bool) {
+	// fmt.Printf("** In eqSolver1 Arg1: %s, Arg2: %s\n", arg1, arg2)
 	//	switch arg1.Type() {
 	//	case CompoundType:
 	//	case ListType:
@@ -350,27 +424,56 @@ func eqSolver1(v Variable, arg1, arg2 Term, env Bindings) (Bindings, bool) {
 	return env, false
 }
 
-func reduceStore() {
-	if Result != RStore {
+func reduceStore(rs *RuleStore) {
+	if rs.Result != RStore {
 		return
 	}
-	bi := bi2CList()
+	// fmt.Printf("** In reduce Store\n")
+	bi := bi2CList(rs)
 	var env Bindings = nil
 	// search alle bindings in equals
-	for _, b := range bi {
+	idxList := []int{}
+	for idx, b := range bi {
 		if b.Functor == "==" {
 			env2, ok := Unify(b.Args[0], b.Args[1], env)
 			if !ok {
-				env2, ok = equationSolver(b.Args[0], b.Args[1], env)
-				if !ok {
-					Result = RFalse
-					return
-				}
+				idxList = append(idxList, idx)
+			} else {
+				env = env2
 			}
-			env = env2
 		}
 	}
 
+	reduce2true := false
+	// fmt.Printf("** Nach Unify idxList: %v \n", idxList)
+	for _, idx := range idxList {
+		b := bi[idx]
+		b2 := Eval(Substitute(*b, env))
+		if b2.Type() == BoolType {
+			if b2.(Bool) == true {
+				reduce2true = true
+				b.IsDeleted = true
+			} else {
+				rs.Result = RFalse
+				return
+			}
+		}
+		if b2.Type() == CompoundType {
+			b3 := b2.(Compound)
+			bi[idx] = &b3
+			env2, ok := equationSolver(b3.Args[0], b3.Args[1], env)
+			if !ok {
+				rs.Result = RFalse
+				return
+			}
+			env = env2
+			reduce2true = true
+			b.IsDeleted = true
+		}
+
+	}
+
+	// fmt.Printf("** Nach equationSover \n")
 	if env == nil {
 		return
 	}
@@ -379,7 +482,7 @@ func reduceStore() {
 	//		b1 :=
 	//	}
 	// reduce all equals
-	reduce2true := false
+
 	pcount := 0
 	visited := map[string]bool{}
 	for i, b := range bi {
@@ -432,7 +535,7 @@ func reduceStore() {
 					reduce2true = true
 					b.IsDeleted = true
 				} else {
-					Result = RFalse
+					rs.Result = RFalse
 					return
 				}
 			}
@@ -442,7 +545,7 @@ func reduceStore() {
 			}
 		}
 	}
-	chrs := chr2CList()
+	chrs := chr2CList(rs)
 	for i, c := range chrs {
 		pcount++
 		c1 := Substitute(*c, env)
@@ -453,7 +556,7 @@ func reduceStore() {
 				c.IsDeleted = true
 				pcount--
 			} else {
-				Result = RFalse
+				rs.Result = RFalse
 				return
 			}
 		}
@@ -463,16 +566,16 @@ func reduceStore() {
 		}
 	}
 	if pcount == 0 && reduce2true {
-		Result = RTrue
+		rs.Result = RTrue
 	}
 }
 
 // prove whether rule fired
-func pRuleFired(rule *chrRule) (ok bool) {
+func pRuleFired(rs *RuleStore, rule *chrRule) (ok bool) {
 	headList := rule.delHead
 	len_head := len(headList)
 	if len_head != 0 {
-		ok = matchDelHead(rule, headList, 0, len_head, 0, nil)
+		ok = matchDelHead(rs, rule, headList, 0, len_head, 0, nil)
 		return ok
 	}
 
@@ -482,16 +585,16 @@ func pRuleFired(rule *chrRule) (ok bool) {
 		return false
 	}
 
-	ok = matchKeepHead(rule, []*big.Int{}, headList, 0, len_head, 0, emptyBinding)
+	ok = matchKeepHead(rs, rule, []*big.Int{}, headList, 0, len_head, 0, rs.emptyBinding)
 	return ok
 }
 
 // prove and trace whether rule fired
-func TraceRuleFired(rule *chrRule) (ok bool) {
+func TraceRuleFired(rs *RuleStore, rule *chrRule) (ok bool) {
 	headList := rule.delHead
 	len_head := len(headList)
 	if len_head != 0 {
-		ok = traceMatchDelHead(rule, headList, 0, len_head, 0, nil)
+		ok = traceMatchDelHead(rs, rule, headList, 0, len_head, 0, nil)
 		return ok
 	}
 
@@ -501,19 +604,19 @@ func TraceRuleFired(rule *chrRule) (ok bool) {
 		return false
 	}
 
-	ok = traceMatchKeepHead(rule, []*big.Int{}, headList, 0, len_head, 0, emptyBinding)
+	ok = traceMatchKeepHead(rs, rule, []*big.Int{}, headList, 0, len_head, 0, rs.emptyBinding)
 	return ok
 }
 
 // Try to match the del-head 'it' from the 'headlist' ('nt'==len of 'headlist')
 // with the 'ienv'-te environmen 'env'
 // If matching ok, call 'matchKeepHead' or 'checkGuards'
-func matchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env Bindings) (ok bool) {
+func matchDelHead(rs *RuleStore, r *chrRule, headList CList, it int, nt int, ienv int, env Bindings) (ok bool) {
 	var env2 Bindings
 	var mark bool
 	head := headList[it]
 	head2 := head
-	chrList := readProperConstraintsFromCHR_Store(head, env)
+	chrList := readProperConstraintsFromCHR_Store(rs, head, env)
 	len_chr := len(chrList)
 	if len_chr == 0 {
 		// variabel in head
@@ -528,7 +631,7 @@ func matchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env Bind
 			}
 			bc := b.(Compound)
 			head2 = &bc
-			chrList = readProperConstraintsFromCHR_Store(head2, env)
+			chrList = readProperConstraintsFromCHR_Store(rs, head2, env)
 			len_chr = len(chrList)
 			if len_chr == 0 {
 				return false
@@ -565,7 +668,7 @@ func matchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env Bind
 						chr := chrList[ie]
 						mark = markCHR(chr)
 						if mark {
-							ok = matchKeepHead(r, nil, headList, 0, nt, ie, env2)
+							ok = matchKeepHead(rs, r, nil, headList, 0, nt, ie, env2)
 							if ok {
 								return ok
 							}
@@ -580,7 +683,7 @@ func matchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env Bind
 						chr := chrList[ie]
 						mark = markCHR(chr)
 						if mark {
-							ok = matchDelHead(r, headList, it+1, nt, ie, env2)
+							ok = matchDelHead(rs, r, headList, it+1, nt, ie, env2)
 							if ok {
 								// not unmarkDelCHR(chr), markt == deleted
 								return ok
@@ -604,7 +707,7 @@ func matchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env Bind
 			env2, ok, mark = markCHRAndMatchDelHead(r.id, head2, chr, env)
 			if ok {
 				senv = append(senv, env2)
-				ok = checkGuards(r, env2)
+				ok = checkGuards(rs, r, env2)
 				if ok {
 					(*head.EMap)[ienv] = senv
 					return ok
@@ -626,7 +729,7 @@ func matchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env Bind
 			if ok {
 				senv = append(senv, env2)
 
-				ok = matchKeepHead(r, nil, headList, 0, nt, ic, env2)
+				ok = matchKeepHead(rs, r, nil, headList, 0, nt, ic, env2)
 				if ok {
 					(*head.EMap)[ienv] = senv
 					return ok
@@ -649,7 +752,7 @@ func matchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env Bind
 		env2, ok, mark = markCHRAndMatchDelHead(r.id, head2, chr, env) // mark chr and Match, if fail unmark chr
 		if ok {
 			senv = append(senv, env2)
-			ok = matchDelHead(r, headList, it+1, nt, ic, env2)
+			ok = matchDelHead(rs, r, headList, it+1, nt, ic, env2)
 			if ok {
 				// not unmarkDelCHR(chr), markt == deleted
 				(*head.EMap)[ienv] = senv
@@ -669,12 +772,12 @@ func matchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env Bind
 // Try to match and trace the del-head 'it' from the 'headlist' ('nt'==len of 'headlist')
 // with the 'ienv'-te environmen 'env'
 // If matching ok, call 'matchKeepHead' or 'checkGuards'
-func traceMatchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env Bindings) (ok bool) {
+func traceMatchDelHead(rs *RuleStore, r *chrRule, headList CList, it int, nt int, ienv int, env Bindings) (ok bool) {
 	var env2 Bindings
 	var mark bool
 	head := headList[it]
 	head2 := head
-	chrList := readProperConstraintsFromCHR_Store(head, env)
+	chrList := readProperConstraintsFromCHR_Store(rs, head, env)
 	TraceHead(3, 3, "match Del-Head (", ienv, ") ", head, " with [")
 	len_chr := len(chrList)
 	if len_chr == 0 {
@@ -692,7 +795,7 @@ func traceMatchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env
 			}
 			bc := b.(Compound)
 			head2 = &bc
-			chrList = readProperConstraintsFromCHR_Store(head2, env)
+			chrList = readProperConstraintsFromCHR_Store(rs, head2, env)
 			len_chr = len(chrList)
 			if len_chr == 0 {
 				Traceln(3, "]")
@@ -761,7 +864,7 @@ func traceMatchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env
 						chr := chrList[ie]
 						mark = markCHR(chr)
 						if mark {
-							ok = traceMatchKeepHead(r, nil, headList, 0, nt, ie, env2)
+							ok = traceMatchKeepHead(rs, r, nil, headList, 0, nt, ie, env2)
 							if ok {
 								return ok
 							}
@@ -776,7 +879,7 @@ func traceMatchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env
 						chr := chrList[ie]
 						mark = markCHR(chr)
 						if mark {
-							ok = traceMatchDelHead(r, headList, it+1, nt, ie, env2)
+							ok = traceMatchDelHead(rs, r, headList, it+1, nt, ie, env2)
 							if ok {
 								// not unmarkDelCHR(chr), markt == deleted
 								return ok
@@ -810,7 +913,7 @@ func traceMatchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env
 				TraceEnv(4, env2)
 				Traceln(4, "")
 
-				ok = traceCheckGuards(r, env2)
+				ok = traceCheckGuards(rs, r, env2)
 				if ok {
 					(*head.EMap)[ienv] = senv
 					TraceEMap(4, 4, head)
@@ -840,7 +943,7 @@ func traceMatchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env
 				TraceEnv(4, env2)
 				Traceln(4, "")
 
-				ok = traceMatchKeepHead(r, nil, headList, 0, nt, ic, env2)
+				ok = traceMatchKeepHead(rs, r, nil, headList, 0, nt, ic, env2)
 				if ok {
 					(*head.EMap)[ienv] = senv
 					TraceEMap(4, 4, head)
@@ -870,7 +973,7 @@ func traceMatchDelHead(r *chrRule, headList CList, it int, nt int, ienv int, env
 			TraceHead(4, 3, "New environment ", "Head: ", head.String(), ", Env: (", ienv, ") [", ic, "], =")
 			TraceEnv(4, env2)
 			Traceln(4, "")
-			ok = traceMatchDelHead(r, headList, it+1, nt, ic, env2)
+			ok = traceMatchDelHead(rs, r, headList, it+1, nt, ic, env2)
 			if ok {
 				// not unmarkDelCHR(chr), markt == deleted
 				(*head.EMap)[ienv] = senv
@@ -985,12 +1088,12 @@ func unmarkKeepCHR(chr *Compound) {
 // Try to match the keep-head 'it' from the 'headlist' ('nt'==len of 'headlist')
 // with the 'ienv'-te environmen 'env'
 // If matching for all keep-heads ok, call 'checkGuards'
-func matchKeepHead(r *chrRule, his []*big.Int, headList CList, it int, nt int, ienv int, env Bindings) (ok bool) {
+func matchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CList, it int, nt int, ienv int, env Bindings) (ok bool) {
 	var env2 Bindings
 	var mark bool
 	head := headList[it]
 	head2 := head
-	chrList := readProperConstraintsFromCHR_Store(head, env)
+	chrList := readProperConstraintsFromCHR_Store(rs, head, env)
 	len_chr := len(chrList)
 	if len_chr == 0 {
 		// variabel in head
@@ -1005,7 +1108,7 @@ func matchKeepHead(r *chrRule, his []*big.Int, headList CList, it int, nt int, i
 			}
 			bc := b.(Compound)
 			head2 = &bc
-			chrList = readProperConstraintsFromCHR_Store(head2, env)
+			chrList = readProperConstraintsFromCHR_Store(rs, head2, env)
 			len_chr = len(chrList)
 			if len_chr == 0 {
 				return false
@@ -1033,7 +1136,7 @@ func matchKeepHead(r *chrRule, his []*big.Int, headList CList, it int, nt int, i
 					chr := chrList[ie]
 					mark = markCHR(chr)
 					if mark {
-						ok = matchKeepHead(r, nil, headList, it+1, nt, ie, env2)
+						ok = matchKeepHead(rs, r, nil, headList, it+1, nt, ie, env2)
 						if ok {
 							unmarkKeepCHR(chr)
 							return ok
@@ -1057,7 +1160,7 @@ func matchKeepHead(r *chrRule, his []*big.Int, headList CList, it int, nt int, i
 			env2, ok, mark = markCHRAndMatchKeepHead(r.id, head2, chr, env)
 			if ok {
 				senv = append(senv, env2)
-				ok = checkGuards(r, env2)
+				ok = checkGuards(rs, r, env2)
 				if ok {
 					unmarkKeepCHR(chr)
 					(*head.EMap)[ienv] = senv
@@ -1082,7 +1185,7 @@ func matchKeepHead(r *chrRule, his []*big.Int, headList CList, it int, nt int, i
 		if ok {
 			senv = append(senv, env2)
 
-			ok = matchKeepHead(r, nil, headList, it+1, nt, ic, env2)
+			ok = matchKeepHead(rs, r, nil, headList, it+1, nt, ic, env2)
 			if ok {
 				unmarkKeepCHR(chr)
 				(*head.EMap)[ienv] = senv
@@ -1102,12 +1205,12 @@ func matchKeepHead(r *chrRule, his []*big.Int, headList CList, it int, nt int, i
 // Try to match and trace the keep-head 'it' from the 'headlist' ('nt'==len of 'headlist')
 // with the 'ienv'-te environmen 'env'
 // If matching for all keep-heads ok, call 'checkGuards'
-func traceMatchKeepHead(r *chrRule, his []*big.Int, headList CList, it int, nt int, ienv int, env Bindings) (ok bool) {
+func traceMatchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CList, it int, nt int, ienv int, env Bindings) (ok bool) {
 	var env2 Bindings
 	var mark bool
 	head := headList[it]
 	head2 := head
-	chrList := readProperConstraintsFromCHR_Store(head, env)
+	chrList := readProperConstraintsFromCHR_Store(rs, head, env)
 	TraceHead(4, 3, "match keep-Head (", ienv, ") ", head, " with [")
 	len_chr := len(chrList)
 	if len_chr == 0 {
@@ -1126,7 +1229,7 @@ func traceMatchKeepHead(r *chrRule, his []*big.Int, headList CList, it int, nt i
 			}
 			bc := b.(Compound)
 			head2 = &bc
-			chrList = readProperConstraintsFromCHR_Store(head2, env)
+			chrList = readProperConstraintsFromCHR_Store(rs, head2, env)
 			len_chr = len(chrList)
 			if len_chr == 0 {
 				Traceln(3, "] - empty chr (Variable=) ", b)
@@ -1191,7 +1294,7 @@ func traceMatchKeepHead(r *chrRule, his []*big.Int, headList CList, it int, nt i
 					mark = markCHR(chr)
 					TraceHeadln(4, 4, " mark keep chr:", chr.String(), " = ", mark)
 					if mark {
-						ok = traceMatchKeepHead(r, nil, headList, it+1, nt, ie, env2)
+						ok = traceMatchKeepHead(rs, r, nil, headList, it+1, nt, ie, env2)
 						if ok {
 							traceUnmarkKeepCHR(chr)
 							return ok
@@ -1222,7 +1325,7 @@ func traceMatchKeepHead(r *chrRule, his []*big.Int, headList CList, it int, nt i
 				TraceEnv(4, env2)
 				Traceln(4, "")
 
-				ok = traceCheckGuards(r, env2)
+				ok = traceCheckGuards(rs, r, env2)
 				if ok {
 					traceUnmarkKeepCHR(chr)
 					(*head.EMap)[ienv] = senv
@@ -1254,7 +1357,7 @@ func traceMatchKeepHead(r *chrRule, his []*big.Int, headList CList, it int, nt i
 			TraceEnv(4, env2)
 			Traceln(4, "")
 
-			ok = traceMatchKeepHead(r, nil, headList, it+1, nt, ic, env2)
+			ok = traceMatchKeepHead(rs, r, nil, headList, it+1, nt, ic, env2)
 			if ok {
 				traceUnmarkKeepCHR(chr)
 				(*head.EMap)[ienv] = senv
@@ -1275,15 +1378,15 @@ func traceMatchKeepHead(r *chrRule, his []*big.Int, headList CList, it int, nt i
 
 // check and trace guards of the rule r with the binding env
 // if all guards are true, fire rule
-func traceCheckGuards(r *chrRule, env Bindings) (ok bool) {
+func traceCheckGuards(rs *RuleStore, r *chrRule, env Bindings) (ok bool) {
 	for _, g := range r.guard {
-		env2, ok := traceCheckGuard(g, env)
+		env2, ok := traceCheckGuard(rs, g, env)
 		if !ok {
 			return false
 		}
 		env = env2
 	}
-	if traceFireRule(r, env) {
+	if traceFireRule(rs, r, env) {
 		return true
 	}
 	// dt do setFail
@@ -1292,7 +1395,7 @@ func traceCheckGuards(r *chrRule, env Bindings) (ok bool) {
 
 // check and trace a guard g with the binding env
 // if guards are true, return the new binding (if ':=', '=' or 'is' guard)
-func traceCheckGuard(g *Compound, env Bindings) (env2 Bindings, ok bool) {
+func traceCheckGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok bool) {
 	TraceHead(3, 3, "check guard: ", g.String())
 	g1 := Substitute(*g, env).(Compound)
 	Trace(3, ", subst: ", g1)
@@ -1315,7 +1418,7 @@ func traceCheckGuard(g *Compound, env Bindings) (env2 Bindings, ok bool) {
 		return env, false
 	case CompoundType:
 		t2 := t1.(Compound)
-		biChrList := readProperConstraintsFromBI_Store(&t2, nil)
+		biChrList := readProperConstraintsFromBI_Store(rs, &t2, nil)
 		len_chr := len(biChrList)
 		if len_chr == 0 {
 			return env, false
@@ -1338,15 +1441,15 @@ func traceCheckGuard(g *Compound, env Bindings) (env2 Bindings, ok bool) {
 
 // check guards of the rule r with the binding env
 // if all guards are true, fire rule
-func checkGuards(r *chrRule, env Bindings) (ok bool) {
+func checkGuards(rs *RuleStore, r *chrRule, env Bindings) (ok bool) {
 	for _, g := range r.guard {
-		env2, ok := checkGuard(g, env)
+		env2, ok := checkGuard(rs, g, env)
 		if !ok {
 			return false
 		}
 		env = env2
 	}
-	if fireRule(r, env) {
+	if fireRule(rs, r, env) {
 		return true
 	}
 	// dt do setFail
@@ -1355,7 +1458,7 @@ func checkGuards(r *chrRule, env Bindings) (ok bool) {
 
 // check a guard g with the binding env
 // if guards are true, return the new binding (if ':=', '=' or 'is' guard)
-func checkGuard(g *Compound, env Bindings) (env2 Bindings, ok bool) {
+func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok bool) {
 
 	g1 := Substitute(*g, env).(Compound)
 
@@ -1376,7 +1479,7 @@ func checkGuard(g *Compound, env Bindings) (env2 Bindings, ok bool) {
 		return env, false
 	case CompoundType:
 		t2 := t1.(Compound)
-		biChrList := readProperConstraintsFromBI_Store(&t2, nil)
+		biChrList := readProperConstraintsFromBI_Store(rs, &t2, nil)
 		len_chr := len(biChrList)
 		if len_chr == 0 {
 			return env, false
@@ -1398,7 +1501,7 @@ func checkGuard(g *Compound, env Bindings) (env2 Bindings, ok bool) {
 }
 
 // rule fired and trace with the environment env
-func traceFireRule(rule *chrRule, env Bindings) bool {
+func traceFireRule(rs *RuleStore, rule *chrRule, env Bindings) bool {
 	var biVarEqTerm Bindings
 	biVarEqTerm = nil
 	goals := rule.body
@@ -1406,7 +1509,7 @@ func traceFireRule(rule *chrRule, env Bindings) bool {
 	if goals.Type() == ListType {
 		for _, g := range goals {
 			TraceHead(3, 3, " Goal: ", g.String())
-			g = RenameAndSubstitute(g, RenameRuleVars, env)
+			g = RenameAndSubstitute(g, rs.RenameRuleVars, env)
 			Traceln(3, " after rename&subst: ", g.String())
 			g = Eval(g)
 
@@ -1466,25 +1569,25 @@ func traceFireRule(rule *chrRule, env Bindings) bool {
 					} // end switch g1.Functor
 				} // end if len(g1.Args) == 2
 				TraceHeadln(3, 3, "Add Goal: ", g)
-				addConstraintToStore(g.(Compound))
-				Result = RStore
+				addConstraintToStore(rs, g.(Compound))
+				rs.Result = RStore
 			} else {
 				if g.Type() == BoolType && !g.(Bool) {
-					Result = RFalse
+					rs.Result = RFalse
 					return false
 				}
 			}
 		}
 		if biVarEqTerm != nil {
-			substituteStores(biVarEqTerm)
+			substituteStores(rs, biVarEqTerm)
 		}
 	}
 	return true
 }
 
-func substituteStores(biEnv Bindings) {
+func substituteStores(rs *RuleStore, biEnv Bindings) {
 	newCHR := []Compound{}
-	for _, aChr := range CHRstore {
+	for _, aChr := range rs.CHRstore {
 		for _, con := range aChr.varArg {
 			if !con.IsDeleted {
 				con1, ok := SubstituteBiEnv(*con, biEnv)
@@ -1505,7 +1608,7 @@ func substituteStores(biEnv Bindings) {
 		}
 	}
 	for _, con := range newCHR {
-		addConstraintToStore(con)
+		addConstraintToStore(rs, con)
 	}
 	/*
 		newBI := []Compound{}
@@ -1527,7 +1630,7 @@ func substituteStores(biEnv Bindings) {
 }
 
 // rule fired with the environment env
-func fireRule(rule *chrRule, env Bindings) bool {
+func fireRule(rs *RuleStore, rule *chrRule, env Bindings) bool {
 	var biVarEqTerm Bindings
 	biVarEqTerm = nil
 	goals := rule.body
@@ -1541,7 +1644,7 @@ func fireRule(rule *chrRule, env Bindings) bool {
 			goals = g2
 		}
 		for _, g := range goals {
-			g = RenameAndSubstitute(g, RenameRuleVars, env)
+			g = RenameAndSubstitute(g, rs.RenameRuleVars, env)
 			g = Eval(g)
 
 			if g.Type() == CompoundType {
@@ -1597,17 +1700,17 @@ func fireRule(rule *chrRule, env Bindings) bool {
 						}
 					} // end switch g1.Functor
 				} // end if len(g1.Args) == 2
-				addConstraintToStore(g.(Compound))
-				Result = RStore
+				addConstraintToStore(rs, g.(Compound))
+				rs.Result = RStore
 			} else {
 				if g.Type() == BoolType && !g.(Bool) {
-					Result = RFalse
+					rs.Result = RFalse
 					return false
 				}
 			}
 		}
 		if biVarEqTerm != nil {
-			substituteStores(biVarEqTerm)
+			substituteStores(rs, biVarEqTerm)
 		}
 	}
 	return true

@@ -37,7 +37,7 @@ func teval(t *testing.T, str1 string, result string) bool {
 }
 
 func tAtt(t *testing.T, store string, head string, result string) bool {
-
+	rs := MakeRuleStore()
 	term1, ok := ParseGoalString(store)
 	if !ok {
 		t.Errorf(fmt.Sprintf("Scan store in add/read store test \"%s\" failed, term1: %s", store, term1.String()))
@@ -53,13 +53,13 @@ func tAtt(t *testing.T, store string, head string, result string) bool {
 		t.Errorf(fmt.Sprintf("Scan result add/read store test \"%s\" failed, term3: %s", result, term3.String()))
 		return false
 	}
-	InitStore()
+	InitStore(rs)
 	switch term1.Type() {
 	case ListType:
 		fmt.Printf(" store [")
 		for _, g := range term1.(List) {
 			if g.Type() == CompoundType {
-				addConstraintToStore(g.(Compound))
+				addConstraintToStore(rs, g.(Compound))
 				fmt.Printf("%s, ", g)
 			} else {
 				fmt.Printf(" no CHR predicate: %s \n", g)
@@ -67,7 +67,7 @@ func tAtt(t *testing.T, store string, head string, result string) bool {
 		}
 		fmt.Printf("]\n")
 	case CompoundType:
-		addConstraintToStore(term1.(Compound))
+		addConstraintToStore(rs, term1.(Compound))
 		fmt.Printf("store [%s]\n", term1)
 	default:
 		fmt.Printf(" no CHR predicate or list: %s \n", term1)
@@ -87,9 +87,9 @@ func tAtt(t *testing.T, store string, head string, result string) bool {
 	fmt.Printf(" Head: %s ", term2)
 	t2 := term2.(Compound)
 	if term2.(Compound).Prio == 0 {
-		att = readProperConstraintsFromCHR_Store(&t2, nil)
+		att = readProperConstraintsFromCHR_Store(rs, &t2, nil)
 	} else {
-		att = readProperConstraintsFromBI_Store(&t2, nil)
+		att = readProperConstraintsFromBI_Store(rs, &t2, nil)
 	}
 	if term3.Type() != ListType {
 		fmt.Printf(" result is not a list %s \n", term3)
@@ -127,7 +127,7 @@ func tAtt(t *testing.T, store string, head string, result string) bool {
 
 }
 
-func tAddStringChrRule(t *testing.T, name, keep, del, guard, body string) bool {
+func tAddStringChrRule(rs *RuleStore, t *testing.T, name, keep, del, guard, body string) bool {
 
 	keepList, ok := ParseHeadString(keep)
 	if !ok || keepList.Type() != ListType {
@@ -168,31 +168,31 @@ func tAddStringChrRule(t *testing.T, name, keep, del, guard, body string) bool {
 		return false
 	}
 
-	CHRruleStore = append(CHRruleStore, &chrRule{name: name, id: nextRuleId,
+	rs.CHRruleStore = append(rs.CHRruleStore, &chrRule{name: name, id: rs.nextRuleId,
 		delHead:  cDelList,
 		keepHead: cKeepList,
 		guard:    cGuardList,
 		body:     bodyList.(List)})
-	nextRuleId++
+	rs.nextRuleId++
 	return true
 
 }
 
-func tNewQuery(t *testing.T, goals string) bool {
-	ClearCHRStore()
-	if tAddStringGoals(t, goals) {
+func tNewQuery(rs *RuleStore, t *testing.T, goals string) bool {
+	ClearCHRStore(rs)
+	if tAddStringGoals(rs, t, goals) {
 		if CHRtrace == 0 {
 			CHRtrace = 1
-			printCHRStore("New goal:")
+			printCHRStore(rs, "New goal:")
 			CHRtrace = 0
 		}
-		CHRsolver()
+		CHRsolver(rs)
 		return true
 	}
 	return false
 }
 
-func tAddStringGoals(t *testing.T, goals string) bool {
+func tAddStringGoals(rs *RuleStore, t *testing.T, goals string) bool {
 	goalList, ok := ParseGoalString(goals)
 	if !ok || goalList.Type() != ListType {
 		t.Errorf(fmt.Sprintf("Scan GOAL-List failed: %s\n", goalList))
@@ -200,7 +200,7 @@ func tAddStringGoals(t *testing.T, goals string) bool {
 	}
 	for _, g := range goalList.(List) {
 		if g.Type() == CompoundType {
-			addConstraintToStore(g.(Compound))
+			addConstraintToStore(rs, g.(Compound))
 		} else {
 			t.Errorf(fmt.Sprintf(" GOAL is not a predicate: %s\n", g))
 			return false
@@ -210,14 +210,14 @@ func tAddStringGoals(t *testing.T, goals string) bool {
 	return true
 }
 
-func checkResult(t *testing.T, chr, bi string) {
+func checkResult(rs *RuleStore, t *testing.T, chr, bi string) {
 
 	chrList, ok := ParseGoalString(chr)
 	if !ok {
 		t.Error(" Scan exspected chr result failed: %s\n", chrList)
 		return
 	}
-	compCHR := chr2List()
+	compCHR := chr2List(rs)
 	chrOK := EqualVarNameCList(compCHR, chrList)
 
 	biList, ok := ParseRuleBodyString(bi)
@@ -225,7 +225,7 @@ func checkResult(t *testing.T, chr, bi string) {
 		t.Error(" Scan exspected bi result failed: %s\n", biList)
 		return
 	}
-	compBI := bi2List()
+	compBI := bi2List(rs)
 	biOK := EqualVarNameCList(compBI, biList)
 
 	if !chrOK && !biOK {

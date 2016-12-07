@@ -8,8 +8,11 @@ package chr
 
 import (
 	"fmt"
-	. "github.com/hfried/GoCHR/src/engine/parser"
+	"strings"
 	"testing"
+	sc "text/scanner"
+
+	. "github.com/hfried/GoCHR/src/engine/parser"
 )
 
 func TestCHR01(t *testing.T) {
@@ -61,7 +64,7 @@ func TestCHR07(t *testing.T) {
 	ok := tAtt(t, "p(2.0,4.0),p(\"Hallo\", a),p(true, b),p(7,a),p(false, a),p(34, b),p(17.3,b),p(\"Welt\",b)",
 		"p(\"OK\",a)", "p(\"Hallo\", a),p(\"Welt\",b)")
 	if ok != true {
-		t.Errorf("TestStoreß7 failed\n")
+		t.Errorf("TestStore07 failed\n")
 	}
 }
 
@@ -122,7 +125,8 @@ func TestCHR12(t *testing.T) {
 
 func TestCHRRule00(t *testing.T) {
 	CHRtrace = 0
-	ok := ParseStringCHRRulesGoals(`
+	rs := MakeRuleStore()
+	ok := rs.ParseStringCHRRulesGoals(`
 	sum([], S) <=> S == 0 .
 	sum([X|Xs], S) <=> sum(Xs, S2), S == X + S2.
 	sum([1,2,3,4,5,6,7,8,9,10], S). 
@@ -132,6 +136,7 @@ func TestCHRRule00(t *testing.T) {
 //	sum([1,X,3], 6).
 //	#result: X == 2 .
 	`)
+	CHRtrace = 1
 	if !ok {
 		t.Error("TestCHRRule00 fails")
 	}
@@ -139,7 +144,8 @@ func TestCHRRule00(t *testing.T) {
 
 func TestCHRRule01(t *testing.T) {
 	CHRtrace = 0
-	ok := ParseStringCHRRulesGoals(`
+	rs := MakeRuleStore()
+	ok := rs.ParseStringCHRRulesGoals(`
 	prime01 @ prime(N) ==> N>2 | prime(N-1).
 	prime02 @ prime(A) | prime(B) <=> B > A, B mod A == 0 | true.
 	prime(100).
@@ -154,7 +160,8 @@ func TestCHRRule01(t *testing.T) {
 
 func TestCHRRule02(t *testing.T) {
 	CHRtrace = 0
-	ok := ParseStringCHRRulesGoals(`
+	rs := MakeRuleStore()
+	ok := rs.ParseStringCHRRulesGoals(`
 	// first rule set with assignment
 	// logarithmic complexity
 	gcd01@ gcd(0) <=> true .
@@ -211,7 +218,8 @@ func TestCHRRule02(t *testing.T) {
 
 func TestCHRRule04(t *testing.T) {
 	CHRtrace = 0
-	ok := ParseStringCHRRulesGoals(`
+	rs := MakeRuleStore()
+	ok := rs.ParseStringCHRRulesGoals(`
 	fib01@ upto(A) ==> fib(0,1), fib(1,1).
 	fib02@ upto(Max), fib(N1,M1), fib(N2,M2) ==> Max > N2, N2 == N1+1 | fib(N2+1,M1+M2).
 	upto(10).
@@ -227,7 +235,8 @@ func TestCHRRule04(t *testing.T) {
 
 func TestCHRRule05(t *testing.T) {
 	CHRtrace = 0
-	ok := ParseStringCHRRulesGoals(`
+	rs := MakeRuleStore()
+	ok := rs.ParseStringCHRRulesGoals(`
 	leq_reflexivity  @ leq(X,X) <=> true.
 	leq_antisymmetry @ leq(X,Y), leq(Y,X) <=> X==Y.
 	leq_idempotence  @ leq(X,Y)\ leq(X,Y) <=> true.
@@ -242,7 +251,8 @@ func TestCHRRule05(t *testing.T) {
 
 func TestCHRRule06(t *testing.T) {
 	CHRtrace = 0
-	ok := ParseStringCHRRulesGoals(`
+	rs := MakeRuleStore()
+	ok := rs.ParseStringCHRRulesGoals(`
 	data1 @ data() ==> edge(berlin, 230, wolfsburg), edge(hannover, 89, wolfsburg), edge(hannover, 108, bielefeld), edge(bielefeld, 194, köln).
 	data2 @ data() ==> edge(berlin,259, jena), edge(jena,55, erfurt), edge(erfurt,205,giessen), edge(giessen,158,köln), edge(köln, 85, aachen).
 	data3 @ data() <=> true .
@@ -261,7 +271,8 @@ func TestCHRRule06(t *testing.T) {
 
 func TestCHRRule07(t *testing.T) {
 	CHRtrace = 0
-	ok := ParseStringCHRRulesGoals(`
+	rs := MakeRuleStore()
+	ok := rs.ParseStringCHRRulesGoals(`
 
 	data1 @ data() ==> edge(berlin, 230, wolfsburg), edge(hannover, 89, wolfsburg), edge(hannover, 108, bielefeld), edge(bielefeld, 194, köln).
 	data2 @ data() ==> edge(berlin,259, jena), edge(jena,55, erfurt), edge(erfurt,205,giessen), edge(giessen,158,köln), edge(köln, 85, aachen).
@@ -281,7 +292,8 @@ func TestCHRRule07(t *testing.T) {
 
 func TestCHRRule08(t *testing.T) {
 	CHRtrace = 0
-	ok := ParseStringCHRRulesGoals(`
+	rs := MakeRuleStore()
+	ok := rs.ParseStringCHRRulesGoals(`
 
 	data1 @ data() ==> edge(berlin, 230, wolfsburg), edge(hannover, 89, wolfsburg), edge(hannover, 108, bielefeld), edge(bielefeld, 194, köln).
 	data2 @ data() ==> edge(berlin,259, jena), edge(jena,55, erfurt), edge(erfurt,205,giessen), edge(giessen,158,köln), edge(köln, 85, aachen).
@@ -301,7 +313,8 @@ func TestCHRRule08(t *testing.T) {
 
 func TestCHRRule09(t *testing.T) {
 	CHRtrace = 0
-	ok := ParseStringCHRRulesGoals(`
+	rs := MakeRuleStore()
+	ok := rs.ParseStringCHRRulesGoals(`
 
 	data1 @ data() ==> edge(berlin, 230, wolfsburg), edge(hannover, 89, wolfsburg), edge(hannover, 108, bielefeld), edge(bielefeld, 194, köln).
 	data2 @ data() ==> edge(berlin,259, jena), edge(jena,55, erfurt), edge(erfurt,205,giessen), edge(giessen,158,köln), edge(köln, 85, aachen).
@@ -321,7 +334,8 @@ func TestCHRRule09(t *testing.T) {
 
 func TestCHRRule10(t *testing.T) {
 	CHRtrace = 1
-	ok := ParseStringCHRRulesGoals(`
+	rs := MakeRuleStore()
+	ok := rs.ParseStringCHRRulesGoals(`
 // first  rule set: change only the search-rule in orginal code
 zero1 @ add(0,Y,Z) <=> Y == Z.
 zero2 @ add(X,0,Z) <=> X == Z.
@@ -346,6 +360,7 @@ add(X,Y,s(s(0))).
 #result: X==s(s(0)), Y==0 .
 add(X,X,s(s(0))).
 #result: X==s(0).
+
 add(X,X,s(s(s(0)))).
 #result: false .
 add(s(0),X,Y), add(X,s(s(0)),s(s(s(0)))).
@@ -368,7 +383,6 @@ succ2 @ add(X,s(Y),Z) <=> Z == s(W), add(X,Y,W).
 //succ3 @ add(X,X,s(Z)) <=> Z == s(W), X == s(Y), add(Y,Y,W).
 succ3_1 @ add(X,X,s(s(W))) <=> X == s(Y), add(Y,Y,W).
 succ3_1a @ add(X,Y,s(s(W))) <=> X == s(A), Y == s(B), add(A,B,W).
-
 
 // search @ add(X,Y,s(Z)) <=> true | add(X1,Y1,Z),
 //                                (X = s(X1),Y = Y1 ; X = X1,Y = s(Y1)).
@@ -393,13 +407,21 @@ add(X,X,s(s(0))).
 
 func TestCHRRule11(t *testing.T) {
 	CHRtrace = 1
-	ok := ParseStringCHRRulesGoals(`
+	src := `
 modus_ponens @ implies(P,Q), P ==> Q.
 implies(farbe(rot), farbe(blau)), farbe(rot) .
 #result: implies(farbe(rot), farbe(blau)), farbe(rot), farbe(blau) .
-`)
+`
 
-	for _, rule := range CHRruleStore {
+	var s sc.Scanner
+	// Initialize the scanner.
+	s.Init(strings.NewReader(src))
+
+	s.Error = Err
+	rs := MakeRuleStore()
+	ok := parseEvalRules(rs, &s)
+
+	for _, rule := range rs.CHRruleStore {
 		fmt.Printf(" Rule: %s @ ", rule.name)
 		for _, h := range rule.keepHead {
 			fmt.Printf("%s, ", h)
@@ -426,11 +448,19 @@ implies(farbe(rot), farbe(blau)), farbe(rot) .
 
 func TestCHRRule12(t *testing.T) {
 	CHRtrace = 1
-	ok := ParseStringCHRRulesGoals(`
+	src := `
 modus_ponens @ implies(P,Q), P <=> Q.
 implies(farbe(rot), farbe(blau)), farbe(rot) .
 #result: farbe(blau) .
-`)
+`
+
+	var s sc.Scanner
+	// Initialize the scanner.
+	s.Init(strings.NewReader(src))
+
+	s.Error = Err
+	rs := MakeRuleStore()
+	ok := parseEvalRules(rs, &s)
 
 	if !ok {
 		t.Error("TestCHRRule12 fails")
@@ -439,11 +469,19 @@ implies(farbe(rot), farbe(blau)), farbe(rot) .
 
 func TestCHRRule13(t *testing.T) {
 	CHRtrace = 1
-	ok := ParseStringCHRRulesGoals(`
+	src := `
 modus_ponens @ implies(P,Q), P ==> Q.
 implies(farbe(rot), farbe(blau)), implies(farbe(blau),farbe(grün)), farbe(rot) .
 #result: implies(farbe(rot), farbe(blau)), implies(farbe(blau),farbe(grün)), farbe(rot), farbe(blau), farbe(grün) .
-`)
+`
+
+	var s sc.Scanner
+	// Initialize the scanner.
+	s.Init(strings.NewReader(src))
+
+	s.Error = Err
+	rs := MakeRuleStore()
+	ok := parseEvalRules(rs, &s)
 
 	if !ok {
 		t.Error("TestCHRRule13 fails")
@@ -452,11 +490,19 @@ implies(farbe(rot), farbe(blau)), implies(farbe(blau),farbe(grün)), farbe(rot) 
 
 func TestCHRRule14(t *testing.T) {
 	CHRtrace = 1
-	ok := ParseStringCHRRulesGoals(`
+	src := `
 modus_ponens @ implies(P,Q), P ==> Q.
 implies(rot(), blau()), rot() .
 #result: implies(rot(), blau()), rot(), blau() .
-`)
+`
+
+	var s sc.Scanner
+	// Initialize the scanner.
+	s.Init(strings.NewReader(src))
+
+	s.Error = Err
+	rs := MakeRuleStore()
+	ok := parseEvalRules(rs, &s)
 
 	if !ok {
 		t.Error("TestCHRRule14 fails")
@@ -465,11 +511,19 @@ implies(rot(), blau()), rot() .
 
 func TestCHRRule15(t *testing.T) {
 	CHRtrace = 1
-	ok := ParseStringCHRRulesGoals(`
+	src := `
 modus_ponens @ implies(P,Q), P <=> Q.
 implies(rot(), blau()), rot() .
 #result: blau() .
-`)
+`
+
+	var s sc.Scanner
+	// Initialize the scanner.
+	s.Init(strings.NewReader(src))
+
+	s.Error = Err
+	rs := MakeRuleStore()
+	ok := parseEvalRules(rs, &s)
 
 	if !ok {
 		t.Error("TestCHRRule15 fails")
@@ -478,11 +532,19 @@ implies(rot(), blau()), rot() .
 
 func TestCHRRule16(t *testing.T) {
 	CHRtrace = 1
-	ok := ParseStringCHRRulesGoals(`
+	src := `
 modus_ponens @ gelb(), implies(P,Q), P ==> Q.
 implies(rot(), blau()), implies(blau(),grün()), rot(), gelb() .
 #result: implies(rot(), blau()), implies(blau(),grün()), rot(), gelb(), blau(), grün() .
-`)
+`
+
+	var s sc.Scanner
+	// Initialize the scanner.
+	s.Init(strings.NewReader(src))
+
+	s.Error = Err
+	rs := MakeRuleStore()
+	ok := parseEvalRules(rs, &s)
 
 	if !ok {
 		t.Error("TestCHRRule16 fails")
@@ -491,11 +553,18 @@ implies(rot(), blau()), implies(blau(),grün()), rot(), gelb() .
 
 func TestCHRRule17(t *testing.T) {
 	CHRtrace = 1
-	ok := ParseStringCHRRulesGoals(`
+	src := `
 modus_ponens @ implies(P,Q), P ==> Q.
 implies(rot, blau), rot .
 #result: implies(rot, blau), rot, blau .
-`)
+`
+	var s sc.Scanner
+	// Initialize the scanner.
+	s.Init(strings.NewReader(src))
+
+	s.Error = Err
+	rs := MakeRuleStore()
+	ok := parseEvalRules(rs, &s)
 
 	if !ok {
 		t.Error("TestCHRRule17 fails")
@@ -504,11 +573,18 @@ implies(rot, blau), rot .
 
 func TestCHRRule18(t *testing.T) {
 	CHRtrace = 1
-	ok := ParseStringCHRRulesGoals(`
+	src := `
 modus_ponens @ implies(P,Q), P <=> Q.
 implies(rot, blau), rot .
 #result: blau .
-`)
+`
+	var s sc.Scanner
+	// Initialize the scanner.
+	s.Init(strings.NewReader(src))
+
+	s.Error = Err
+	rs := MakeRuleStore()
+	ok := parseEvalRules(rs, &s)
 
 	if !ok {
 		t.Error("TestCHRRule18 fails")
@@ -517,13 +593,83 @@ implies(rot, blau), rot .
 
 func TestCHRRule19(t *testing.T) {
 	CHRtrace = 1
-	ok := ParseStringCHRRulesGoals(`
+	src := `
 modus_ponens @ gelb, implies(P,Q), P ==> Q.
 implies(rot, blau), implies(blau,grün), rot, gelb .
 #result: implies(rot, blau), implies(blau,grün), rot, gelb, blau, grün .
-`)
+`
+
+	var s sc.Scanner
+	// Initialize the scanner.
+	s.Init(strings.NewReader(src))
+
+	s.Error = Err
+	rs := MakeRuleStore()
+	ok := parseEvalRules(rs, &s)
 
 	if !ok {
 		t.Error("TestCHRRule19 fails")
 	}
+}
+
+func TestRS01(t *testing.T) {
+	rs := MakeRuleStore()
+	keep := []string{}
+	del := []string{"sum([], S)"}
+	guard := []string{}
+	body := []string{"S == 0"}
+	err := rs.AddRule("Sum01", keep, del, guard, body)
+	if err != nil {
+		fmt.Printf("Add Rule Sum01 fail \n")
+		fmt.Print(err.Error())
+		t.Error(err.Error())
+	}
+	keep = []string{}
+	del = []string{"sum([X|Xs], S)"}
+	guard = []string{}
+	body = []string{"sum(Xs, S2)", "S == X + S2"}
+	err = rs.AddRule("Sum02", keep, del, guard, body)
+	if err != nil {
+		fmt.Printf("Add Rule Sum02 fail \n")
+		fmt.Print(err.Error())
+		t.Error(err.Error())
+	}
+	CHRtrace = 0
+	//	sum([1,2,3,4,5,6,7,8,9,10], S).
+	//	#result: S == 55 .
+	rBool, rList, err := rs.Infer([]string{"sum([1,2,3,4,5,6,7,8,9,10], S)"})
+	CHRtrace = 1
+	if err != nil {
+		fmt.Printf("Infer fail \n")
+		fmt.Print(err.Error())
+		t.Error(err.Error())
+	}
+	fmt.Printf("\nresult: %v = %v \n", rBool, rList)
+	checkResult(rs, t, "", "S == 55")
+
+	//	//	sum([X,2,3], 6).
+	//	//	#result: X == 1 .
+	//	CHRtrace = 4
+	//	rBool, rList, err = rs.Infer([]string{"sum([X,2,3], 6)"})
+	//	CHRtrace = 1
+	//	if err != nil {
+	//		fmt.Printf("Infer fail \n")
+	//		fmt.Print(err.Error())
+	//		t.Error(err.Error())
+	//	}
+	//	fmt.Printf("\nresult: %v = %v \n", rBool, rList)
+	//	checkResult(rs, t, "", "X == 1")
+	//	//	sum([1,X,3], 6).
+	//	//	#result: X == 2 .
+	//	CHRtrace = 0
+	//	rBool, rList, err = rs.Infer([]string{"sum([1,X,3], 6)"})
+	//	CHRtrace = 1
+	//	if err != nil {
+	//		fmt.Printf("Infer fail \n")
+	//		fmt.Print(err.Error())
+	//		t.Error(err.Error())
+	//	}
+	//	fmt.Printf("\nresult: %v = %v \n", rBool, rList)
+	//	checkResult(rs, t, "", "X == 2")
+	//	CHRtrace = 0
 }

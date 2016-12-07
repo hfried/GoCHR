@@ -48,7 +48,7 @@ func Err(s *sc.Scanner, str string) {
 }
 
 func Err1(s *sc.Scanner, format string, a ...interface{}) {
-	Err(s, fmt.Sprintf(format, a...))
+	s.Error(s, fmt.Sprintf(format, a...))
 }
 
 func readBIConstraint(s *sc.Scanner) (t Term, tok rune, ok bool) {
@@ -117,7 +117,7 @@ func Assignexpr(s *sc.Scanner, tok1 rune) (t Term, tok rune, ok bool) {
 			return
 		}
 		if t.Type() != VariableType {
-			Err(s, fmt.Sprintf(" A Variable, not %s, exspected on the left site of %s", t, op))
+			s.Error(s, fmt.Sprintf(" A Variable, not %s, exspected on the left site of %s", t, op))
 			return t, tok, false
 		}
 		t1 := t
@@ -507,7 +507,7 @@ func factor(s *sc.Scanner, tok1 rune) (t Term, tok rune, ok bool) {
 				c := n[0]
 				ok = true
 				if c < 'A' || c > 'Z' {
-					Err(s, fmt.Sprintf("expected variable in [-list after '|' not '%s'", n))
+					s.Error(s, fmt.Sprintf("expected variable in [-list after '|' not '%s'", n))
 					ok = false
 				}
 				v := NewVariable(n)
@@ -517,17 +517,17 @@ func factor(s *sc.Scanner, tok1 rune) (t Term, tok rune, ok bool) {
 				if tok == ']' {
 					return t, s.Scan(), ok
 				} else {
-					Err(s, fmt.Sprintf("missing closed ']' after '[ ... | %s", n))
+					s.Error(s, fmt.Sprintf("missing closed ']' after '[ ... | %s", n))
 					return t, tok, false
 				}
 			} else {
-				Err(s, fmt.Sprintf("expected variable in [-list after '|' not '%s'", Tok2str(tok)))
+				s.Error(s, fmt.Sprintf("expected variable in [-list after '|' not '%s'", Tok2str(tok)))
 				return t, tok, false
 
 			}
 		}
 		if tok != ']' {
-			Err(s, fmt.Sprintf("missing closed ']' for the open '[' at position %s", pos))
+			s.Error(s, fmt.Sprintf("missing closed ']' for the open '[' at position %s", pos))
 			return t, tok, false
 		}
 		return t, s.Scan(), true
@@ -541,7 +541,7 @@ func factor(s *sc.Scanner, tok1 rune) (t Term, tok rune, ok bool) {
 			return
 		}
 		if tok != ')' {
-			Err(s, fmt.Sprintf("missing closed ')' for the open '(' at position %s", pos))
+			s.Error(s, fmt.Sprintf("missing closed ')' for the open '(' at position %s", pos))
 			return t, tok, false
 		}
 		tok = s.Scan()
@@ -578,10 +578,10 @@ func factor(s *sc.Scanner, tok1 rune) (t Term, tok rune, ok bool) {
 		}
 	// case sc.Comment:
 	case sc.EOF:
-		Err(s, "EOF missing term")
+		s.Error(s, "EOF missing term")
 		return Atom("nil"), tok, false
 	default:
-		Err(s, fmt.Sprintf("unexpected character '%c', expect <variable>, <name>, <constant>, '(' or '['", tok))
+		s.Error(s, fmt.Sprintf("unexpected character '%c', expect <variable>, <name>, <constant>, '(' or '['", tok))
 		t = Atom("nil")
 		return t, tok, false
 	}
@@ -619,7 +619,7 @@ func Factor_name(name string, s *sc.Scanner, tok1 rune) (t Term, tok rune, ok bo
 	t = Compound{Functor: name, Args: args}
 
 	if tok != ')' {
-		Err(s, fmt.Sprintf("missing closed ')' for the open '(' at position %s", pos))
+		s.Error(s, fmt.Sprintf("missing closed ')' for the open '(' at position %s", pos))
 		return t, tok, false
 	}
 	return t, s.Scan(), true

@@ -110,7 +110,7 @@ func CopyCompound(c Compound) (c1 Compound) {
 		identifyOccurVars: c.identifyOccurVars,
 		IsDeleted:         c.IsDeleted,
 		Args:              []Term{},
-		HasArgs:			c.HasArgs,
+		HasArgs:           c.HasArgs,
 	}
 	args := []Term{}
 	for _, a := range c.Args {
@@ -370,7 +370,11 @@ func (t Compound) String() string {
 		return "[" + strings.Join(args, ",") + " | " + oldarg.String() + "]"
 	}
 	if t.Arity() == 0 {
-		if t.HasArgs { return t.Functor + "()"} else { return t.Functor }
+		if t.HasArgs {
+			return t.Functor + "()"
+		} else {
+			return t.Functor
+		}
 	}
 	args := []string{}
 	for _, arg := range t.Args {
@@ -785,7 +789,7 @@ func Unify1(t1, t2 Term, visited Vars, env Bindings) (env2 Bindings, ok bool) {
 func checkOccur(v Vars, t Term, env Bindings) bool {
 
 	for _, termv := range t.OccurVars() {
-		fmt.Printf(" Var %s in Term: %s \n", termv, t)
+		// fmt.Printf("** Var %s in Term: %s \n", termv, t)
 		for _, visitv := range v {
 			if termv.Name == visitv.Name && termv.index.Cmp(visitv.index) == 0 {
 				return true

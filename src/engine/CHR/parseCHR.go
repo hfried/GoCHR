@@ -9,13 +9,15 @@
 package chr
 
 import (
+	"errors"
 	"fmt"
-	. "github.com/hfried/GoCHR/src/engine/parser"
-	. "github.com/hfried/GoCHR/src/engine/terms"
 	"io"
 	"os"
 	"strings"
 	sc "text/scanner"
+
+	. "github.com/hfried/GoCHR/src/engine/parser"
+	. "github.com/hfried/GoCHR/src/engine/terms"
 )
 
 type parseType int
@@ -27,17 +29,19 @@ const (
 	ParseRuleBody // Chr, Built-In, true, false and Variable
 )
 
-func CHRerr(format string, a ...interface{}) {
-	fmt.Fprintln(os.Stderr, format, a)
+func CHRerr(s *sc.Scanner, format string, a ...interface{}) {
+	s.Error(s, fmt.Sprintf(format, a...))
 }
 
 func toClist(l Term) (CList, bool) {
 	cl := CList{}
 	if l.Type() != ListType {
+		fmt.Printf("** in toClist - keine Liste\n")
 		return cl, false
 	}
 	for _, t1 := range l.(List) {
 		if t1.Type() != CompoundType {
+			fmt.Printf("** in toClist kein  CompoundType %v \n", t1)
 			return cl, false
 		}
 		t2 := t1.(Compound)
@@ -45,6 +49,170 @@ func toClist(l Term) (CList, bool) {
 		cl = append(cl, &t2)
 	}
 	return cl, true
+}
+
+func parseRule(name string, keep []string, del []string, guard []string, body []string) (cKeep, cDel, cGuard CList, cBody List, err error) {
+	errMsgList := ""
+	Errfunc := func(s *sc.Scanner, str string) {
+		if str != "illegal char literal" {
+			if errMsgList != "" {
+				errMsgList += "\n"
+			}
+			errMsgList += fmt.Sprintf("*** Parse Error before[%v]: %s", s.Pos(), str)
+		}
+	}
+	// var s sc.Scanner
+	var s sc.Scanner
+	// Initialize the scanner.
+	keepList := List{}
+	for _, src := range keep {
+		s.Init(strings.NewReader(src))
+		s.Error = Errfunc
+		t, _, ok := parseConstraints(ParseHead, &s)
+		if !ok {
+			return nil, nil, nil, nil, errors.New(errMsgList)
+		}
+		switch t.Type() {
+		case ListType:
+			if len(keepList) == 0 {
+				keepList = t.(List)
+			} else {
+				for _, e := range t.(List) {
+					keepList = append(keepList, e)
+				}
+			}
+		default:
+			keepList = append(keepList, t)
+		}
+	}
+
+	cKeep, ok := toClist(keepList)
+	if !ok {
+		return nil, nil, nil, nil, errors.New(fmt.Sprintf("Convert Keep-Head in rule %s failed: %s\n", name, keepList))
+	}
+
+	delList := List{}
+	for _, src := range del {
+		s.Init(strings.NewReader(src))
+		s.Error = Errfunc
+		t, _, ok := parseConstraints(ParseHead, &s)
+		if !ok {
+			return nil, nil, nil, nil, errors.New(errMsgList)
+		}
+		switch t.Type() {
+		case ListType:
+			if len(delList) == 0 {
+				delList = t.(List)
+			} else {
+				for _, e := range t.(List) {
+					delList = append(delList, e)
+				}
+			}
+		default:
+			delList = append(delList, t)
+		}
+	}
+
+	cDel, ok = toClist(delList)
+
+	if !ok {
+		return nil, nil, nil, nil, errors.New(fmt.Sprintf("Convert DEL-Head in rule %s failed: %s\n", name, delList))
+	}
+
+	guardList := List{}
+	for _, src := range guard {
+		s.Init(strings.NewReader(src))
+		s.Error = Errfunc
+		t, _, ok := parseConstraints(ParseBI, &s)
+		if !ok {
+			return nil, nil, nil, nil, errors.New(errMsgList)
+		}
+		switch t.Type() {
+		case ListType:
+			if len(guardList) == 0 {
+				guardList = t.(List)
+			} else {
+				for _, e := range t.(List) {
+					guardList = append(guardList, e)
+				}
+			}
+		default:
+			guardList = append(guardList, t)
+		}
+	}
+
+	cGuard, ok = toClist(guardList)
+
+	if !ok {
+		return nil, nil, nil, nil, errors.New(fmt.Sprintf("Convert GUARD in rule %s failed: %s\n", name, guardList))
+	}
+
+	cBody = List{}
+	for _, src := range body {
+		s.Init(strings.NewReader(src))
+		s.Error = Errfunc
+		t, _, ok := parseConstraints(ParseRuleBody, &s)
+		if !ok {
+			return nil, nil, nil, nil, errors.New(errMsgList)
+		}
+		switch t.Type() {
+		case ListType:
+			if len(cBody) == 0 {
+				cBody = t.(List)
+			} else {
+				for _, e := range t.(List) {
+					cBody = append(cBody, e)
+				}
+			}
+		default:
+			cBody = append(cBody, t)
+		}
+	}
+
+	err = nil
+	return
+}
+
+func parseGoals(goals []string) (CList, error) {
+	var s sc.Scanner
+	errMsgList := ""
+	Errfunc := func(s *sc.Scanner, str string) {
+		if str != "illegal char literal" {
+			if errMsgList != "" {
+				errMsgList += "\n"
+			}
+			errMsgList += fmt.Sprintf("*** Parse Error before[%v]: %s", s.Pos(), str)
+		}
+	}
+
+	gList := List{}
+	for _, src := range goals {
+		s.Init(strings.NewReader(src))
+		s.Error = Errfunc
+		t, _, ok := parseConstraints(ParseGoal, &s)
+		if !ok {
+			fmt.Printf("parseConstraints Fehler !!!\n ")
+			return nil, errors.New(errMsgList)
+		}
+		switch t.Type() {
+		case ListType:
+			if len(gList) == 0 {
+				gList = t.(List)
+			} else {
+				for _, e := range t.(List) {
+					gList = append(gList, e)
+				}
+			}
+		default:
+			gList = append(gList, t)
+		}
+	}
+	cLiBody, ok := toClist(gList)
+	if !ok {
+		fmt.Printf("toClist Fehler !! \n")
+		return nil, errors.New(errMsgList)
+	}
+	return cLiBody, nil
 }
 
 // parse CHR-rules and goals from string src
@@ -56,7 +224,7 @@ func toClist(l Term) (CList, bool) {
 //
 // goals
 // <predicates> '.'
-func ParseStringCHRRulesGoals(src string) (ok bool) {
+func (rs *RuleStore) ParseStringCHRRulesGoals(src string) (ok bool) {
 	// src is the input that we want to tokenize.
 	// var s sc.Scanner
 	var s sc.Scanner
@@ -65,11 +233,11 @@ func ParseStringCHRRulesGoals(src string) (ok bool) {
 
 	s.Error = Err
 
-	ok = parseEvalRules(&s)
+	ok = parseEvalRules(rs, &s)
 	return
 }
 
-func ParseFileCHRRulesGoals(inFile io.Reader) (ok bool) {
+func (rs *RuleStore) ParseFileCHRRulesGoals(inFile io.Reader) (ok bool) {
 	// src is the input that we want to tokenize.
 	// var s sc.Scanner
 	var s sc.Scanner
@@ -77,26 +245,33 @@ func ParseFileCHRRulesGoals(inFile io.Reader) (ok bool) {
 	s.Init(inFile)
 
 	s.Error = Err
-
-	ok = parseEvalRules(&s)
+	ok = parseEvalRules(rs, &s)
 	return
 }
 
-func parseEvalRules(s *sc.Scanner) (ok bool) {
+func parseEvalRules(rs *RuleStore, s *sc.Scanner) (ok bool) {
 	var t Term
 	var rule *chrRule
 	var goals CList
 	newGoals := false
-	// newGoals & rule --> clear CHRruleStore, InitStore, !newGoals
-	// newGoals & gloals --> InitStore
-	InitStore()
+	//        C O N I T I O N S         ||            R E S U L T
+	// newGoals | new rules | new goals || RuleStore | CHRStore  | newGoals
+	// ---------------------------------||----------------------------------
+	//   false  |   true    |    -      || add rules |     -     |  false
+	//   false  |     -     |   true    ||           | new goals |  true
+	//                                               | & solve   |
+	//   true   |   true    |    -      || new rules |     -     |  false
+	//   true   |   false   |   true    ||           | new goals |  true
+	//                                               | && solve  |
+
+	InitStore(rs)
 
 	nameNr := 1
 	tok := s.Scan()
 
 	TraceHeadln(4, 4, " parse rule tok: ", Tok2str(tok))
 	if tok == sc.EOF {
-		Err(s, " Empty input")
+		s.Error(s, " Empty input")
 		return false
 	}
 
@@ -110,52 +285,43 @@ func parseEvalRules(s *sc.Scanner) (ok bool) {
 				return ok
 			}
 			if tok == '@' {
-				tok, rule, goals, ok = parseKeepHead(s, s.Scan(), t.String())
+				tok, rule, goals, ok = parseKeepHead(rs, s, s.Scan(), t.String())
 			} else {
-				tok, rule, goals, ok = parseKeepHead1(s, tok, fmt.Sprintf("(%d)", nameNr), t)
+				tok, rule, goals, ok = parseKeepHead1(rs, s, tok, fmt.Sprintf("(%d)", nameNr), t)
 				nameNr++
 			}
 			TraceHeadln(4, 4, " after parseKeep, rule", rule, ", goals: ", goals, "ok: ", ok)
 			if rule != nil {
 				if newGoals {
-					InitStore()
-					CHRruleStore = []*chrRule{rule}
+					InitStore(rs)
+					rs.CHRruleStore = []*chrRule{rule}
 					newGoals = false
 				} else {
-					CHRruleStore = append(CHRruleStore, rule)
-					nextRuleId++
+					rs.CHRruleStore = append(rs.CHRruleStore, rule)
+					rs.nextRuleId++
 				}
 			}
 			if goals != nil {
 				if newGoals {
-					ClearCHRStore()
+					ClearCHRStore(rs)
 				} else {
 					newGoals = true
 				}
 
 				for _, g := range goals {
-					addRefConstraintToStore(g)
+					addRefConstraintToStore(rs, g)
 				}
 
-				CHRsolver()
+				CHRsolver(rs)
 
 				if CHRtrace == 0 {
-					printCHRStore("Result: ")
+					printCHRStore(rs, "Result: ")
 					CHRtrace = 0
 				} else {
-					printCHRStore("Result: ")
+					printCHRStore(rs, "Result: ")
 				}
 			}
 
-			//	CHRsolver()
-
-			//	checkResult(t, "", "X == s(0)")
-			//	CHRtrace = 1
-			//	printCHRStore("Result")
-
-			//	CHRtrace = 0
-			//	tNewQuery(t, "add(s(s(0)), s(0), Z).")
-			//	checkResult(t, "", "Z == s(s(s(0)))")
 		case '#':
 			tok = s.Scan()
 			if tok == sc.Ident {
@@ -177,9 +343,9 @@ func parseEvalRules(s *sc.Scanner) (ok bool) {
 					if tok == '.' {
 						tok = s.Scan()
 					}
-					compCHR := chr2List()
+					compCHR := chr2List(rs)
 					chrOK := EqualVarNameCList(compCHR, t)
-					compBI := bi2List()
+					compBI := bi2List(rs)
 					biOK := EqualVarNameCList(compBI, t)
 					if chrOK || biOK {
 						continue
@@ -233,7 +399,7 @@ func parseEvalRules(s *sc.Scanner) (ok bool) {
 			}
 
 		default:
-			Err(s, fmt.Sprintf("Missing a rule-name, a predicate-name or a '#' at the beginning (not \"%v\")", Tok2str(tok)))
+			s.Error(s, fmt.Sprintf("Missing a rule-name, a predicate-name or a '#' at the beginning (not \"%v\")", Tok2str(tok)))
 			return false
 		}
 
@@ -243,12 +409,12 @@ func parseEvalRules(s *sc.Scanner) (ok bool) {
 
 // parseKeepHead - it is not clear, a goal-list or a head-list
 // - name: the name of the rule
-func parseKeepHead(s *sc.Scanner, tok rune, name string) (rune, *chrRule, CList, bool) {
+func parseKeepHead(rs *RuleStore, s *sc.Scanner, tok rune, name string) (rune, *chrRule, CList, bool) {
 
 	TraceHeadln(4, 4, " parse Keep Head:", name, " tok: ", Tok2str(tok))
 
 	if tok != sc.Ident {
-		Err(s, fmt.Sprintf("Missing predicate-name in rule: %s (not \"%v\")", name, Tok2str(tok)))
+		s.Error(s, fmt.Sprintf("Missing predicate-name in rule: %s (not \"%v\")", name, Tok2str(tok)))
 		return tok, nil, nil, false
 	}
 	t, tok, ok := Factor_name(s.TokenText(), s, s.Scan())
@@ -256,19 +422,19 @@ func parseKeepHead(s *sc.Scanner, tok rune, name string) (rune, *chrRule, CList,
 		return tok, nil, nil, ok
 	}
 
-	return parseKeepHead1(s, tok, name, t)
+	return parseKeepHead1(rs, s, tok, name, t)
 }
 
 // parseKeepHead1 - it is not clear, a goal-list or a head-list
 // - name: the name of the rule
 // - t: the first predicate
-func parseKeepHead1(s *sc.Scanner, tok rune, name string, t Term) (tok1 rune, rule *chrRule, cl CList, ok bool) {
+func parseKeepHead1(rs *RuleStore, s *sc.Scanner, tok rune, name string, t Term) (tok1 rune, rule *chrRule, cl CList, ok bool) {
 
 	if t.Type() != CompoundType && t.Type() != VariableType {
 		//		if t.Type == VariableType {
 		//			t = Compound{Functor: "0", Args: []Term{t}, Prio: 7}
 		//		} else {
-		Err(s, fmt.Sprintf("Missing a predicate in rule %s (not %s)", name, t.String()))
+		s.Error(s, fmt.Sprintf("Missing a predicate in rule %s (not %s)", name, t.String()))
 		return tok, nil, nil, false
 	}
 	//	}
@@ -278,7 +444,7 @@ func parseKeepHead1(s *sc.Scanner, tok rune, name string, t Term) (tok1 rune, ru
 	for tok == ',' {
 		tok = s.Scan()
 		if tok != sc.Ident {
-			Err(s, fmt.Sprintf("Missing predicate-name in rule %s (not \"%v\")", name, Tok2str(tok)))
+			s.Error(s, fmt.Sprintf("Missing predicate-name in rule %s (not \"%v\")", name, Tok2str(tok)))
 			return tok, nil, nil, false
 		}
 		t, tok, ok = Factor_name(s.TokenText(), s, s.Scan())
@@ -291,7 +457,7 @@ func parseKeepHead1(s *sc.Scanner, tok rune, name string, t Term) (tok1 rune, ru
 
 	if tok == '.' {
 		// Goals-List
-		cGoalList, ok := prove2Clist(ParseGoal, name, keepList)
+		cGoalList, ok := prove2Clist(ParseGoal, name, keepList, s)
 		if !ok {
 			return tok, nil, nil, false
 		}
@@ -303,7 +469,7 @@ func parseKeepHead1(s *sc.Scanner, tok rune, name string, t Term) (tok1 rune, ru
 	}
 
 	// keep- or del-head
-	cKeepList, ok := prove2Clist(ParseHead, name, keepList)
+	cKeepList, ok := prove2Clist(ParseHead, name, keepList, s)
 	if !ok {
 		return tok, nil, nil, false
 	}
@@ -312,53 +478,53 @@ func parseKeepHead1(s *sc.Scanner, tok rune, name string, t Term) (tok1 rune, ru
 	case '\\', '|':
 		delList, tok, ok = parseDelHead(s, s.Scan())
 
-		cDelList, ok := prove2Clist(ParseHead, name, delList)
+		cDelList, ok := prove2Clist(ParseHead, name, delList, s)
 		if !ok {
 			return tok, nil, nil, false
 		}
 		if tok != '<' {
-			Err(s, fmt.Sprintf(" '<' in '<=>' excpected, not: %s", Tok2str(tok)))
+			s.Error(s, fmt.Sprintf(" '<' in '<=>' excpected, not: %s", Tok2str(tok)))
 			return tok, nil, nil, false
 		}
 		tok = s.Scan()
 		if tok != '=' {
-			Err(s, fmt.Sprintf(" '=' in '<=>' excpected, not: %s", Tok2str(tok)))
+			s.Error(s, fmt.Sprintf(" '=' in '<=>' excpected, not: %s", Tok2str(tok)))
 			return tok, nil, nil, false
 		}
 		tok = s.Scan()
 		if tok != '>' {
-			Err(s, fmt.Sprintf(" '>' in '<=>' excpected, not: %s", Tok2str(tok)))
+			s.Error(s, fmt.Sprintf(" '>' in '<=>' excpected, not: %s", Tok2str(tok)))
 			return tok, nil, nil, false
 		}
-		return parseGuardHead(s, s.Scan(), name, cKeepList, cDelList)
+		return parseGuardHead(rs, s, s.Scan(), name, cKeepList, cDelList)
 
 	case '<':
 		tok = s.Scan()
 		if tok != '=' {
-			Err(s, fmt.Sprintf(" '=' in '<=>' excpected, not: %s", Tok2str(tok)))
+			s.Error(s, fmt.Sprintf(" '=' in '<=>' excpected, not: %s", Tok2str(tok)))
 			return tok, nil, nil, false
 		}
 		tok = s.Scan()
 		if tok != '>' {
-			Err(s, fmt.Sprintf(" '>' in '<=>' excpected, not: %s", Tok2str(tok)))
+			s.Error(s, fmt.Sprintf(" '>' in '<=>' excpected, not: %s", Tok2str(tok)))
 			return tok, nil, nil, false
 		}
 		// the scaned keep-list is the del-list
-		return parseGuardHead(s, s.Scan(), name, nil, cKeepList)
+		return parseGuardHead(rs, s, s.Scan(), name, nil, cKeepList)
 	case '=':
 		tok = s.Scan()
 		if tok != '=' {
-			Err(s, fmt.Sprintf(" second '=' in '==>' excpected, not: %s", Tok2str(tok)))
+			s.Error(s, fmt.Sprintf(" second '=' in '==>' excpected, not: %s", Tok2str(tok)))
 			return tok, nil, nil, false
 		}
 		tok = s.Scan()
 		if tok != '>' {
-			Err(s, fmt.Sprintf(" '>' in '==>' excpected, not: %s", Tok2str(tok)))
+			s.Error(s, fmt.Sprintf(" '>' in '==>' excpected, not: %s", Tok2str(tok)))
 			return tok, nil, nil, false
 		}
-		return parseGuardHead(s, s.Scan(), name, cKeepList, nil)
+		return parseGuardHead(rs, s, s.Scan(), name, cKeepList, nil)
 	default:
-		Err(s, fmt.Sprintf(" unexcpected token: %s, excpect in head-rule '\\', '<=>' or '==>'", Tok2str(tok)))
+		s.Error(s, fmt.Sprintf(" unexcpected token: %s, excpect in head-rule '\\', '<=>' or '==>'", Tok2str(tok)))
 	}
 
 	return tok, nil, nil, false
@@ -369,7 +535,7 @@ func parseDelHead(s *sc.Scanner, tok rune) (delList List, tok1 rune, ok bool) {
 	TraceHeadln(4, 4, "parse Del-Head tok[", Tok2str(tok))
 	delList = List{}
 	if tok != sc.Ident {
-		Err(s, fmt.Sprintf("Missing predicate-name (not \"%v\")", Tok2str(tok)))
+		s.Error(s, fmt.Sprintf("Missing predicate-name (not \"%v\")", Tok2str(tok)))
 		return delList, tok, false
 	}
 	t, tok1, ok = Factor_name(s.TokenText(), s, s.Scan())
@@ -380,7 +546,7 @@ func parseDelHead(s *sc.Scanner, tok rune) (delList List, tok1 rune, ok bool) {
 	for tok1 == ',' {
 		tok = s.Scan()
 		if tok != sc.Ident {
-			Err(s, fmt.Sprintf("Missing predicate-name (not \"%v\")", Tok2str(tok)))
+			s.Error(s, fmt.Sprintf("Missing predicate-name (not \"%v\")", Tok2str(tok)))
 			return delList, tok, false
 		}
 		t, tok1, ok = Factor_name(s.TokenText(), s, s.Scan())
@@ -393,7 +559,7 @@ func parseDelHead(s *sc.Scanner, tok rune) (delList List, tok1 rune, ok bool) {
 }
 
 // parseGuardHead - it is no clear, if it a guard or body
-func parseGuardHead(s *sc.Scanner, tok rune, name string, cKeepList, cDelList CList) (tok1 rune, rule *chrRule, goals CList, ok bool) {
+func parseGuardHead(rs *RuleStore, s *sc.Scanner, tok rune, name string, cKeepList, cDelList CList) (tok1 rune, rule *chrRule, goals CList, ok bool) {
 
 	bodyList, tok, ok := parseConstraints1(ParseRuleBody, s, tok)
 	TraceHead(4, 4, " parseGuardHead(1): ", bodyList, ", tok: '", Tok2str(tok), "'")
@@ -402,7 +568,7 @@ func parseGuardHead(s *sc.Scanner, tok rune, name string, cKeepList, cDelList CL
 	case '.':
 		tok = s.Scan()
 	case '|':
-		cGuardList, ok = prove2Clist(ParseBI, name, bodyList)
+		cGuardList, ok = prove2Clist(ParseBI, name, bodyList, s)
 		tok = s.Scan()
 		bodyList, tok, ok = parseConstraints1(ParseRuleBody, s, tok)
 		TraceHead(4, 4, " parseBodyHead(2): ", bodyList, ", tok: '", Tok2str(tok), "'")
@@ -410,11 +576,11 @@ func parseGuardHead(s *sc.Scanner, tok rune, name string, cKeepList, cDelList CL
 			return tok, nil, nil, false
 		}
 		if tok != '.' {
-			Err(s, fmt.Sprintf(" After rule %s a '.' exspected, not a %s", name, Tok2str(tok)))
+			s.Error(s, fmt.Sprintf(" After rule %s a '.' exspected, not a %s", name, Tok2str(tok)))
 		}
 		tok = s.Scan()
 	default:
-		Err(s, fmt.Sprintf(" In rule %s a '|' (after guard) or '.' (after head) exspected, not a %s", name, Tok2str(tok)))
+		s.Error(s, fmt.Sprintf(" In rule %s a '|' (after guard) or '.' (after head) exspected, not a %s", name, Tok2str(tok)))
 	}
 
 	//	CHRruleStore = append(CHRruleStore, &chrRule{name: name, id: nextRuleId,
@@ -424,16 +590,16 @@ func parseGuardHead(s *sc.Scanner, tok rune, name string, cKeepList, cDelList CL
 	//		body:     bodyList.(List)})
 	//	nextRuleId++
 
-	return tok, &chrRule{name: name, id: nextRuleId,
+	return tok, &chrRule{name: name, id: rs.nextRuleId,
 		delHead:  cDelList,
 		keepHead: cKeepList,
 		guard:    cGuardList,
 		body:     bodyList.(List)}, nil, true
 }
 
-func addChrRule(name string, keepList, delList, guardList, bodyList Term) bool {
+func addChrRule(rs *RuleStore, s *sc.Scanner, name string, keepList, delList, guardList, bodyList Term) bool {
 
-	cKeepList, ok := prove2Clist(ParseHead, name, keepList)
+	cKeepList, ok := prove2Clist(ParseHead, name, keepList, s)
 	if !ok {
 		return ok
 	}
@@ -442,7 +608,7 @@ func addChrRule(name string, keepList, delList, guardList, bodyList Term) bool {
 	//	if delList.Type() != ListType {
 	//		return errors.New(fmt.Sprintf("DEl-Head in rule %s must be a List, not:  %s\n", name, delList))
 	//	}
-	cDelList, ok := prove2Clist(ParseHead, name, delList)
+	cDelList, ok := prove2Clist(ParseHead, name, delList, s)
 	if !ok {
 		return ok
 	}
@@ -451,7 +617,7 @@ func addChrRule(name string, keepList, delList, guardList, bodyList Term) bool {
 	//	if guardList.Type() != ListType {
 	//		return errors.New(fmt.Sprintf("GUARD in rule %s must be a List, not:  %s (%v)\n", name, guardList, ok))
 	//	}
-	cGuardList, ok := prove2Clist(ParseBI, name, guardList)
+	cGuardList, ok := prove2Clist(ParseBI, name, guardList, s)
 	if !ok {
 		return ok
 	}
@@ -463,26 +629,26 @@ func addChrRule(name string, keepList, delList, guardList, bodyList Term) bool {
 	//		return errors.New(fmt.Sprintf("BODY in rule %s must be a List, not:  %s\n", name, bodyList))
 	//	}
 
-	CHRruleStore = append(CHRruleStore, &chrRule{name: name, id: nextRuleId,
+	rs.CHRruleStore = append(rs.CHRruleStore, &chrRule{name: name, id: rs.nextRuleId,
 		delHead:  cDelList,
 		keepHead: cKeepList,
 		guard:    cGuardList,
 		body:     bodyList.(List)})
-	nextRuleId++
+	rs.nextRuleId++
 	return true
 }
 
-func addStringGoals(goals string) bool {
+func addStringGoals(rs *RuleStore, s *sc.Scanner, goals string) bool {
 	goalList, ok := ParseGoalString(goals)
 	if !ok || goalList.Type() != ListType {
-		CHRerr("Scan GOAL-List failed: %s\n", goalList)
+		CHRerr(s, "Scan GOAL-List failed: %s\n", goalList)
 		return false
 	}
 	for _, g := range goalList.(List) {
 		if g.Type() == CompoundType {
-			addConstraintToStore(g.(Compound))
+			addConstraintToStore(rs, g.(Compound))
 		} else {
-			CHRerr(" GOAL is not a predicate: %s\n", g)
+			CHRerr(s, " GOAL is not a predicate: %s\n", g)
 			return false
 		}
 
@@ -538,16 +704,16 @@ func ParseGoalString(src string) (result Term, ok bool) {
 	return
 }
 
-func NewQuery(goals string) bool {
-	ClearCHRStore()
-	if addStringGoals(goals) {
-		CHRsolver()
-		return true
-	}
-	return false
-}
+//func NewQuery(goals string) bool {
+//	ClearCHRStore()
+//	if addStringGoals(goals) {
+//		CHRsolver()
+//		return true
+//	}
+//	return false
+//}
 
-func prove2Clist(ty parseType, name string, t Term) (cl CList, ok bool) {
+func prove2Clist(ty parseType, name string, t Term, s *sc.Scanner) (cl CList, ok bool) {
 	// ty == ParseCHR, ParseBI, ParseGoal-CHR and Built-In,
 	// no: ParseRuleGoal-Chr, Built-In and Variable
 	cl = CList{}
@@ -555,61 +721,61 @@ func prove2Clist(ty parseType, name string, t Term) (cl CList, ok bool) {
 	case AtomType:
 		switch ty {
 		case ParseHead:
-			CHRerr(" unexpected atom ", t, " in head of rule ", name)
+			CHRerr(s, " unexpected atom ", t, " in head of rule ", name)
 			return cl, false
 		case ParseBI:
-			CHRerr(" unexpected atom ", t, " in guard of rule ", name)
+			CHRerr(s, " unexpected atom ", t, " in guard of rule ", name)
 			return cl, false
 		case ParseGoal:
-			CHRerr(" unexpected atom ", t, " in goal-list ")
+			CHRerr(s, " unexpected atom ", t, " in goal-list ")
 			return cl, false
 		}
 	case BoolType:
 		switch ty {
 		case ParseHead:
-			CHRerr(" unexpected boolean ", t, " in head of rule ", name)
+			CHRerr(s, " unexpected boolean ", t, " in head of rule ", name)
 			return cl, false
 		case ParseBI:
-			CHRerr(" unexpected boolean ", t, " in guard of rule ", name)
+			CHRerr(s, " unexpected boolean ", t, " in guard of rule ", name)
 			return cl, false
 		case ParseGoal:
-			CHRerr(" unexpected boolean ", t, " in goal-list ")
+			CHRerr(s, " unexpected boolean ", t, " in goal-list ")
 			return cl, false
 		}
 	case IntType:
 		switch ty {
 		case ParseHead:
-			CHRerr(" unexpected integer ", t, " in head of rule ", name)
+			CHRerr(s, " unexpected integer ", t, " in head of rule ", name)
 			return cl, false
 		case ParseBI:
-			CHRerr(" unexpected integer ", t, " in guard of rule ", name)
+			CHRerr(s, " unexpected integer ", t, " in guard of rule ", name)
 			return cl, false
 		case ParseGoal:
-			CHRerr(" unexpected integer ", t, " in goal-list ")
+			CHRerr(s, " unexpected integer ", t, " in goal-list ")
 			return cl, false
 		}
 	case FloatType:
 		switch ty {
 		case ParseHead:
-			CHRerr(" unexpected float-number ", t, " in head of rule ", name)
+			CHRerr(s, " unexpected float-number ", t, " in head of rule ", name)
 			return cl, false
 		case ParseBI:
-			CHRerr(" unexpected float-number ", t, " in guard of rule ", name)
+			CHRerr(s, " unexpected float-number ", t, " in guard of rule ", name)
 			return cl, false
 		case ParseGoal:
-			CHRerr(" unexpected float-number ", t, " in goal-list ")
+			CHRerr(s, " unexpected float-number ", t, " in goal-list ")
 			return cl, false
 		}
 	case StringType:
 		switch ty {
 		case ParseHead:
-			CHRerr(" unexpected string ", t, " in head of rule ", name)
+			CHRerr(s, " unexpected string ", t, " in head of rule ", name)
 			return cl, false
 		case ParseBI:
-			CHRerr(" unexpected string ", t, " in guard of rule ", name)
+			CHRerr(s, " unexpected string ", t, " in guard of rule ", name)
 			return cl, false
 		case ParseGoal:
-			CHRerr(" unexpected string ", t, " in goal-list ")
+			CHRerr(s, " unexpected string ", t, " in goal-list ")
 			return cl, false
 		}
 	case CompoundType:
@@ -617,7 +783,7 @@ func prove2Clist(ty parseType, name string, t Term) (cl CList, ok bool) {
 		switch ty {
 		case ParseHead: // CHR, no Build-In
 			if comp.Prio != 0 {
-				CHRerr(" unexpected Build-In predicate ", t, " in head of rule ", name)
+				CHRerr(s, " unexpected Build-In predicate ", t, " in head of rule ", name)
 				return cl, false
 			}
 			comp.EMap = &EnvMap{}
@@ -625,7 +791,7 @@ func prove2Clist(ty parseType, name string, t Term) (cl CList, ok bool) {
 			return cl, true
 		case ParseBI: // only Build-In
 			if comp.Prio == 0 {
-				CHRerr(" unexpected CHR predicate ", t, " in guard of rule ", name)
+				CHRerr(s, " unexpected CHR predicate ", t, " in guard of rule ", name)
 				return cl, false
 			}
 			cl = append(cl, &comp)
@@ -641,7 +807,7 @@ func prove2Clist(ty parseType, name string, t Term) (cl CList, ok bool) {
 				t1 = Compound{Functor: "", Args: []Term{t1}}
 			} else {
 				if t1.Type() != CompoundType {
-					return prove2Clist(ty, name, t1)
+					return prove2Clist(ty, name, t1, s)
 				}
 			}
 			t2 := t1.(Compound)
@@ -656,13 +822,13 @@ func prove2Clist(ty parseType, name string, t Term) (cl CList, ok bool) {
 	case VariableType:
 		switch ty {
 		case ParseHead:
-			CHRerr(" unexpected variable ", t, " in head of rule ", name)
+			CHRerr(s, " unexpected variable ", t, " in head of rule ", name)
 			return cl, false
 		case ParseBI:
-			CHRerr(" unexpected variable ", t, " in guard of rule ", name)
+			CHRerr(s, " unexpected variable ", t, " in guard of rule ", name)
 			return cl, false
 		case ParseGoal:
-			CHRerr(" unexpected variable ", t, " in goal-list ")
+			CHRerr(s, " unexpected variable ", t, " in goal-list ")
 			return cl, false
 		}
 	}
@@ -688,19 +854,19 @@ func parseConstraints1(ty parseType, s *sc.Scanner, tok1 rune) (t Term, tok rune
 	switch ty {
 	case ParseHead:
 		if t.Type() != CompoundType || t.(Compound).Prio != 0 {
-			Err(s, fmt.Sprintf(" Not a CHR-predicate: %s ", t))
+			s.Error(s, fmt.Sprintf(" Not a CHR-predicate: %s ", t))
 		}
 	case ParseBI:
 		if t.Type() != CompoundType || t.(Compound).Prio == 0 {
-			Err(s, fmt.Sprintf(" Not a Built-in constraint: %s ", t))
+			s.Error(s, fmt.Sprintf(" Not a Built-in constraint: %s ", t))
 		}
 	case ParseGoal:
 		if t.Type() != CompoundType {
-			Err(s, fmt.Sprintf(" Not a CHR-predicate, a predicate or a build-in function: %s ", t))
+			s.Error(s, fmt.Sprintf(" Not a CHR-predicate, a predicate or a build-in function: %s ", t))
 		}
 	case ParseRuleBody:
 		if t.Type() != CompoundType && t.Type() != VariableType && t.Type() != BoolType {
-			Err(s, fmt.Sprintf(" Not a CHR-predicate, a predicatea, a build-in function or variable: %s ", t))
+			s.Error(s, fmt.Sprintf(" Not a CHR-predicate, a predicatea, a build-in function or variable: %s ", t))
 		}
 	}
 
@@ -716,19 +882,19 @@ func parseConstraints1(ty parseType, s *sc.Scanner, tok1 rune) (t Term, tok rune
 			switch ty {
 			case ParseHead:
 				if t.Type() != CompoundType || t.(Compound).Prio != 0 {
-					Err(s, fmt.Sprintf(" Not a CHR-predicate: %s ", t))
+					s.Error(s, fmt.Sprintf(" Not a CHR-predicate: %s ", t))
 				}
 			case ParseBI:
 				if t.Type() != CompoundType || t.(Compound).Prio == 0 {
-					Err(s, fmt.Sprintf(" Not a Built-in constraint: %s ", t))
+					s.Error(s, fmt.Sprintf(" Not a Built-in constraint: %s ", t))
 				}
 			case ParseGoal:
 				if t.Type() != CompoundType {
-					Err(s, fmt.Sprintf(" Not a CHR-predicate, a predicate or a build-in function: %s ", t))
+					s.Error(s, fmt.Sprintf(" Not a CHR-predicate, a predicate or a build-in function: %s ", t))
 				}
 			case ParseRuleBody:
 				if t.Type() != CompoundType && t.Type() != VariableType && t.Type() != BoolType {
-					Err(s, fmt.Sprintf(" Not a CHR-predicate, a predicatea, a build-in function or variable: %s ", t))
+					s.Error(s, fmt.Sprintf(" Not a CHR-predicate, a predicatea, a build-in function or variable: %s ", t))
 				}
 			}
 
@@ -757,7 +923,7 @@ func parseBIConstraint(s *sc.Scanner) (t Term, tok rune, ok bool) {
 	TraceHeadln(4, 4, "<-- expression: term: %s tok: '%s' ok: %v \n", t.String(), Tok2str(tok), ok)
 
 	if t.Type() != CompoundType || t.(Compound).Prio == 0 {
-		Err(s, fmt.Sprintf(" Not a Built-in constraint: %s ", t))
+		s.Error(s, fmt.Sprintf(" Not a Built-in constraint: %s ", t))
 	}
 
 	if tok == sc.EOF || !ok {
@@ -771,7 +937,7 @@ func parseBIConstraint(s *sc.Scanner) (t Term, tok rune, ok bool) {
 			TraceHeadln(4, 4, "<-- expression: term: %s tok: '%s' ok: %v ", t.String(), Tok2str(tok), ok)
 
 			if t.Type() != CompoundType || t.(Compound).Prio == 0 {
-				Err(s, fmt.Sprintf(" Not a Built-in constraint: %s ", t))
+				s.Error(s, fmt.Sprintf(" Not a Built-in constraint: %s ", t))
 			}
 			if !ok {
 				return t1, tok, false
@@ -785,8 +951,8 @@ func parseBIConstraint(s *sc.Scanner) (t Term, tok rune, ok bool) {
 	return
 }
 
-func printCHRStore(h string) {
-	switch Result {
+func printCHRStore(rs *RuleStore, h string) {
+	switch rs.Result {
 	case REmpty:
 		if h != "New goal:" {
 			TraceHeadln(1, 0, h, " No rule fired (!)")
@@ -801,7 +967,7 @@ func printCHRStore(h string) {
 	}
 	// default: Result == RStore
 	first := true
-	for _, aChr := range CHRstore {
+	for _, aChr := range rs.CHRstore {
 		for _, con := range aChr.varArg {
 			if !con.IsDeleted {
 				if first {
@@ -830,7 +996,7 @@ func printCHRStore(h string) {
 	}
 
 	first = true
-	for _, aChr := range BuiltInStore {
+	for _, aChr := range rs.BuiltInStore {
 		for _, con := range aChr.varArg {
 			if !con.IsDeleted {
 				if first {
@@ -860,8 +1026,8 @@ func printCHRStore(h string) {
 
 }
 
-func WriteCHRStore(out *os.File) {
-	switch Result {
+func WriteCHRStore(rs *RuleStore, out *os.File) {
+	switch rs.Result {
 	case REmpty:
 		// if h != "New goal:" {
 		fmt.Fprintf(out, "No rule fired (!)")
@@ -876,7 +1042,7 @@ func WriteCHRStore(out *os.File) {
 	}
 	// default: Result == RStore
 	first := true
-	for _, aChr := range CHRstore {
+	for _, aChr := range rs.CHRstore {
 		for _, con := range aChr.varArg {
 			if !con.IsDeleted {
 				if first {
@@ -906,7 +1072,7 @@ func WriteCHRStore(out *os.File) {
 	}
 
 	first = true
-	for _, aChr := range BuiltInStore {
+	for _, aChr := range rs.BuiltInStore {
 		for _, con := range aChr.varArg {
 			if !con.IsDeleted {
 				if first {
@@ -936,12 +1102,12 @@ func WriteCHRStore(out *os.File) {
 
 }
 
-func chr2CList() (l CList) {
+func chr2CList(rs *RuleStore) (l CList) {
 	l = CList{}
-	if Result != RStore {
+	if rs.Result != RStore {
 		return
 	}
-	for _, aChr := range CHRstore {
+	for _, aChr := range rs.CHRstore {
 		for _, con := range aChr.varArg {
 			if !con.IsDeleted {
 				l = append(l, con)
@@ -956,9 +1122,9 @@ func chr2CList() (l CList) {
 	return
 }
 
-func bi2CList() (l CList) {
+func bi2CList(rs *RuleStore) (l CList) {
 	l = CList{}
-	for _, aChr := range BuiltInStore {
+	for _, aChr := range rs.BuiltInStore {
 		for _, con := range aChr.varArg {
 			if !con.IsDeleted {
 				l = append(l, con)
@@ -973,12 +1139,12 @@ func bi2CList() (l CList) {
 	return
 }
 
-func chr2List() (l List) {
+func chr2List(rs *RuleStore) (l List) {
 	l = List{}
-	if Result != RStore {
+	if rs.Result != RStore {
 		return
 	}
-	for _, aChr := range CHRstore {
+	for _, aChr := range rs.CHRstore {
 		for _, con := range aChr.varArg {
 			if !con.IsDeleted {
 				l = append(l, *con)
@@ -993,8 +1159,8 @@ func chr2List() (l List) {
 	return
 }
 
-func bi2List() (l List) {
-	switch Result {
+func bi2List(rs *RuleStore) (l List) {
+	switch rs.Result {
 	case REmpty:
 		l = List{String("no rule fired")}
 	case RFalse:
@@ -1004,7 +1170,7 @@ func bi2List() (l List) {
 	default:
 
 		l = List{}
-		for _, aChr := range BuiltInStore {
+		for _, aChr := range rs.BuiltInStore {
 			for _, con := range aChr.varArg {
 				if !con.IsDeleted {
 					l = append(l, *con)
@@ -1015,9 +1181,9 @@ func bi2List() (l List) {
 	return
 }
 
-func chr2string() (str string) {
+func chr2string(rs *RuleStore) (str string) {
 	first := true
-	for _, aChr := range CHRstore {
+	for _, aChr := range rs.CHRstore {
 		for _, con := range aChr.varArg {
 			if !con.IsDeleted {
 				if first {
@@ -1047,9 +1213,9 @@ func chr2string() (str string) {
 	return
 }
 
-func bi2string() (str string) {
+func bi2string(rs *RuleStore) (str string) {
 	first := true
-	for _, aChr := range BuiltInStore {
+	for _, aChr := range rs.BuiltInStore {
 		for _, con := range aChr.varArg {
 			if !con.IsDeleted {
 				if first {
