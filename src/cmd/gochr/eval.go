@@ -3,10 +3,11 @@ package main
 import (
 	"flag"
 	"fmt"
-	chr "github.com/hfried/GoCHR/src/engine/CHR"
-	"github.com/hfried/GoCHR/src/engine/parser"
 	"log"
 	"os"
+
+	chr "github.com/hfried/GoCHR/src/engine/CHR"
+	// "github.com/hfried/GoCHR/src/engine/parser"
 )
 
 const helpEval = `
@@ -70,10 +71,10 @@ func evalCmd() {
 	if !ok {
 		log.Fatal(fmt.Errorf("%s\n", err))
 	}
-	parser.CHRtrace = 0
+	chr.CHRtrace = 0
 	chr.CHRsolver(rs)
 
-	parser.CHRtrace = 1
+	chr.CHRtrace = 1
 	chr.WriteCHRStore(rs, outFile)
 
 }

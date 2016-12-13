@@ -8,9 +8,10 @@ package chr
 
 import (
 	"fmt"
+	"testing"
+
 	. "github.com/hfried/GoCHR/src/engine/parser"
 	. "github.com/hfried/GoCHR/src/engine/terms"
-	"testing"
 )
 
 func teval(t *testing.T, str1 string, result string) bool {
@@ -172,7 +173,8 @@ func tAddStringChrRule(rs *RuleStore, t *testing.T, name, keep, del, guard, body
 		delHead:  cDelList,
 		keepHead: cKeepList,
 		guard:    cGuardList,
-		body:     bodyList.(List)})
+		body:     bodyList.(List),
+		eMap:     &EnvMap{inBinding: rs.emptyBinding, outBindings: map[int]*EnvMap{}}})
 	rs.nextRuleId++
 	return true
 

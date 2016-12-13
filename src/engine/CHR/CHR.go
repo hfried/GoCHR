@@ -9,10 +9,10 @@
 package chr
 
 import (
-	// "fmt"
+	"fmt"
 	"math/big"
 
-	. "github.com/hfried/GoCHR/src/engine/parser"
+	//	. "github.com/hfried/GoCHR/src/engine/parser"
 	. "github.com/hfried/GoCHR/src/engine/terms"
 )
 
@@ -32,6 +32,11 @@ type argCHR struct {
 
 type store map[string]*argCHR
 
+type EnvMap struct {
+	inBinding   Bindings
+	outBindings map[int]*EnvMap
+}
+
 type chrRule struct {
 	name     string
 	id       int
@@ -40,6 +45,7 @@ type chrRule struct {
 	keepHead CList // kept constraint
 	guard    CList // built-in constraint
 	body     List  // add CHR and built-in constraint
+	eMap     *EnvMap
 }
 
 type resultType int
@@ -84,7 +90,8 @@ func (rs *RuleStore) AddRule(name string, keep []string, del []string, guard []s
 			delHead:  cDelList,
 			keepHead: cKeepList,
 			guard:    cGuardList,
-			body:     bodyList})
+			body:     bodyList,
+			eMap:     &EnvMap{inBinding: rs.emptyBinding, outBindings: map[int]*EnvMap{}}})
 		rs.nextRuleId++
 	}
 	return err
@@ -165,15 +172,7 @@ func ClearCHRStore(rs *RuleStore) {
 	rs.QueryVars = Vars{}
 	// clear EMaps
 	for _, rule := range rs.CHRruleStore {
-		for _, del := range rule.delHead {
-			del.EMap = &EnvMap{}
-		}
-		for _, keep := range rule.keepHead {
-			keep.EMap = &EnvMap{}
-		}
-		for _, guard := range rule.guard {
-			guard.EMap = &EnvMap{}
-		}
+		rule.eMap = &EnvMap{inBinding: rs.emptyBinding, outBindings: map[int]*EnvMap{}}
 	}
 }
 
@@ -184,6 +183,16 @@ func NewArgCHR() *argCHR {
 }
 
 func addGoal1(g *Compound, s store) {
+	switch len(g.Args) {
+	case 0:
+		TraceHeadln(3, 3, "  addGoal1: '", g.Functor, "'() ")
+	case 1:
+		TraceHeadln(3, 3, "  addGoal1: Functor:'", g.Functor, "'(", g.Args[0], ")")
+	case 2:
+		TraceHeadln(3, 3, "  addGoal1: Functor:'", g.Functor, "'(", g.Args[0], ",", g.Args[1], ")")
+	default:
+		TraceHeadln(3, 3, "  addGoal1: Functor:'", g.Functor, "'(", g.Args[0], ",", g.Args[1], ", ... )")
+	}
 
 	aArg, ok := s[g.Functor]
 	if !ok {
@@ -196,6 +205,7 @@ func addGoal1(g *Compound, s store) {
 		return
 	}
 	arg0 := args[0]
+
 	switch arg0.Type() {
 	case AtomType:
 		cl, ok := aArg.atomArg[string(arg0.(Atom))]
@@ -255,6 +265,9 @@ func readProperConstraintsFromBI_Store(rs *RuleStore, t *Compound, env Bindings)
 }
 
 func readProperConstraintsFromStore(t *Compound, aAtt *argCHR, env Bindings) CList {
+	if t.Functor == "safety" {
+		TraceHeadln(3, 3, "  readProperConstrain: ", t.Functor)
+	}
 	args := t.Args
 	l := len(args)
 	if l == 0 {
@@ -265,15 +278,22 @@ func readProperConstraintsFromStore(t *Compound, aAtt *argCHR, env Bindings) CLi
 	for argTyp == VariableType {
 		t2, ok := GetBinding(arg0.(Variable), env)
 		if ok {
+			if t.Functor == "safety" {
+				TraceHeadln(3, 3, "  Binding: ", t2)
+			}
 			arg0 = t2
 			argTyp = arg0.Type()
 		} else {
 			break
 		}
 	}
+
 	switch arg0.Type() {
 	case AtomType:
 		cl, ok := aAtt.atomArg[string(arg0.(Atom))]
+		if t.Functor == "safety" {
+			TraceHeadln(3, 3, "  arg0 == AtomType: ", string(arg0.(Atom)), " OK:", ok, "CL: ", cl)
+		}
 		if ok {
 			return cl
 		}
@@ -293,6 +313,9 @@ func readProperConstraintsFromStore(t *Compound, aAtt *argCHR, env Bindings) CLi
 	case ListType:
 		return aAtt.listArg
 	case VariableType:
+		if t.Functor == "safety" {
+			TraceHeadln(3, 3, "  arg0 == VariableType: ", arg0.(Variable), " aAtt.varArg: ", aAtt.varArg)
+		}
 		return aAtt.varArg
 	}
 	return CList{}
@@ -574,8 +597,14 @@ func reduceStore(rs *RuleStore) {
 func pRuleFired(rs *RuleStore, rule *chrRule) (ok bool) {
 	headList := rule.delHead
 	len_head := len(headList)
+	if rule.eMap == nil {
+		fmt.Printf(" ######### empty envMap in RULE !!!!!!!!!!!!!!!\n")
+		rule.eMap = &EnvMap{inBinding: rs.emptyBinding, outBindings: map[int]*EnvMap{}}
+	}
+
 	if len_head != 0 {
-		ok = matchDelHead(rs, rule, headList, 0, len_head, 0, nil)
+
+		ok = matchDelHead(rs, rule, headList, 0, len_head, rule.eMap)
 		return ok
 	}
 
@@ -585,7 +614,7 @@ func pRuleFired(rs *RuleStore, rule *chrRule) (ok bool) {
 		return false
 	}
 
-	ok = matchKeepHead(rs, rule, []*big.Int{}, headList, 0, len_head, 0, rs.emptyBinding)
+	ok = matchKeepHead(rs, rule, []*big.Int{}, headList, 0, len_head, rule.eMap)
 	return ok
 }
 
@@ -593,8 +622,13 @@ func pRuleFired(rs *RuleStore, rule *chrRule) (ok bool) {
 func TraceRuleFired(rs *RuleStore, rule *chrRule) (ok bool) {
 	headList := rule.delHead
 	len_head := len(headList)
+
+	if rule.eMap == nil {
+		rule.eMap = &EnvMap{inBinding: rs.emptyBinding, outBindings: map[int]*EnvMap{}}
+	}
+
 	if len_head != 0 {
-		ok = traceMatchDelHead(rs, rule, headList, 0, len_head, 0, nil)
+		ok = traceMatchDelHead(rs, rule, headList, 0, len_head, rule.eMap)
 		return ok
 	}
 
@@ -604,18 +638,19 @@ func TraceRuleFired(rs *RuleStore, rule *chrRule) (ok bool) {
 		return false
 	}
 
-	ok = traceMatchKeepHead(rs, rule, []*big.Int{}, headList, 0, len_head, 0, rs.emptyBinding)
+	ok = traceMatchKeepHead(rs, rule, []*big.Int{}, headList, 0, len_head, rule.eMap)
 	return ok
 }
 
 // Try to match the del-head 'it' from the 'headlist' ('nt'==len of 'headlist')
 // with the 'ienv'-te environmen 'env'
 // If matching ok, call 'matchKeepHead' or 'checkGuards'
-func matchDelHead(rs *RuleStore, r *chrRule, headList CList, it int, nt int, ienv int, env Bindings) (ok bool) {
-	var env2 Bindings
+func matchDelHead(rs *RuleStore, r *chrRule, headList CList, it int, nt int, envMap *EnvMap) (ok bool) {
+	var env2 *EnvMap
 	var mark bool
 	head := headList[it]
 	head2 := head
+	env := envMap.inBinding
 	chrList := readProperConstraintsFromCHR_Store(rs, head, env)
 	len_chr := len(chrList)
 	if len_chr == 0 {
@@ -655,93 +690,97 @@ func matchDelHead(rs *RuleStore, r *chrRule, headList CList, it int, nt int, ien
 	// check in head stored environment map
 	ie := 0
 	len_ie := 0
-	senv, ok := (*head.EMap)[ienv]
-	if ok {
-		len_ie = len(senv)
-		if lastHead {
-			ie = len_ie
-		} else {
-			if lastDelHead {
-				for ; ie < len_ie; ie++ {
-					env2 = senv[ie]
-					if env2 != nil {
-						chr := chrList[ie]
-						mark = markCHR(chr)
-						if mark {
-							ok = matchKeepHead(rs, r, nil, headList, 0, nt, ie, env2)
-							if ok {
-								return ok
-							}
-							unmarkDelCHR(chr)
+	senv := envMap.outBindings
+	// senv, ok := (*head.EMap)[ienv]
+	//	if ok {
+	len_ie = len(senv)
+	if lastHead {
+		ie = len_ie
+	} else {
+		if lastDelHead {
+			for ; ie < len_ie; ie++ {
+				env2 = senv[ie]
+				if env2 != nil {
+					chr := chrList[ie]
+					mark = markCHR(chr)
+					if mark {
+						ok = matchKeepHead(rs, r, nil, headList, 0, nt, env2)
+						if ok {
+							return ok
 						}
+						unmarkDelCHR(chr)
 					}
 				}
-			} else { // not a last Del-Head
-				for ; ie < len_ie; ie++ {
-					env2 = senv[ie]
-					if env2 != nil {
-						chr := chrList[ie]
-						mark = markCHR(chr)
-						if mark {
-							ok = matchDelHead(rs, r, headList, it+1, nt, ie, env2)
-							if ok {
-								// not unmarkDelCHR(chr), markt == deleted
-								return ok
-							}
-							unmarkDelCHR(chr)
+			}
+		} else { // not a last Del-Head
+			for ; ie < len_ie; ie++ {
+				env2 = senv[ie]
+				if env2 != nil {
+					chr := chrList[ie]
+					mark = markCHR(chr)
+					if mark {
+						ok = matchDelHead(rs, r, headList, it+1, nt, env2)
+						if ok {
+							// not unmarkDelCHR(chr), markt == deleted
+							return ok
 						}
-
+						unmarkDelCHR(chr)
 					}
-				} // for ; ie < len_ie; ie++
-			} // ! lastDelHead
-		} // ! lastHead
-	} else {
-		senv = []Bindings{}
-		(*head.EMap)[ienv] = senv
-	}
+
+				}
+			} // for ; ie < len_ie; ie++
+		} // ! lastDelHead
+	} // ! lastHead
+	//	} else {
+	//		// senv = []Bindings{}
+	//		envMap.nextBindings[ienv] = &EnvMap{storedBinding: rs.emptyBinding, nextBindings: map[int]*EnvMap{}}
+	//		// (*head.EMap)[ienv] = senv
+	//	}
 	// End check in head stored environment map
 	// normal head-check, start at ie (not at 0 !!)
 	if lastHead {
 		for ok, ic := false, ie; !ok && ic < len_chr; ic++ {
 			chr := chrList[ic]
-			env2, ok, mark = markCHRAndMatchDelHead(r.id, head2, chr, env)
+			envNew, ok, mark := markCHRAndMatchDelHead(r.id, head2, chr, env)
 			if ok {
-				senv = append(senv, env2)
-				ok = checkGuards(rs, r, env2)
+
+				//senv = append(senv, env2)
+				ok = checkGuards(rs, r, envNew)
 				if ok {
-					(*head.EMap)[ienv] = senv
+					senv[ic] = &EnvMap{inBinding: envNew, outBindings: map[int]*EnvMap{}}
+					// (*head.EMap)[ienv] = senv
 					return ok
 				}
 			} else {
-				senv = append(senv, nil)
+				senv[ic] = nil
 			}
 			if mark {
 				unmarkDelCHR(chr)
 			}
 		}
-		(*head.EMap)[ienv] = senv
+		// (*head.EMap)[ienv] = senv
 		return false
 	}
 	if lastDelHead {
 		for ok, ic := false, ie; !ok && ic < len_chr; ic++ {
 			chr := chrList[ic]
-			env2, ok, mark = markCHRAndMatchDelHead(r.id, head2, chr, env)
+			envNew, ok, mark := markCHRAndMatchDelHead(r.id, head2, chr, env)
 			if ok {
-				senv = append(senv, env2)
-
-				ok = matchKeepHead(rs, r, nil, headList, 0, nt, ic, env2)
+				// senv = append(senv, env2)
+				senv[ic] = &EnvMap{inBinding: envNew, outBindings: map[int]*EnvMap{}}
+				ok = matchKeepHead(rs, r, nil, headList, 0, nt, senv[ic])
 				if ok {
-					(*head.EMap)[ienv] = senv
+					// (*head.EMap)[ienv] = senv
 					return ok
 				}
 			} else {
-				senv = append(senv, nil)
+				senv[ic] = nil
 			}
 			if mark {
 				unmarkDelCHR(chr)
 			}
 		}
-		(*head.EMap)[ienv] = senv
+		// (*head.EMap)[ienv] = senv
 		return false
 	}
 
@@ -749,36 +788,37 @@ func matchDelHead(rs *RuleStore, r *chrRule, headList CList, it int, nt int, ien
 
 		chr := chrList[ic]
 
-		env2, ok, mark = markCHRAndMatchDelHead(r.id, head2, chr, env) // mark chr and Match, if fail unmark chr
+		envNew, ok, mark := markCHRAndMatchDelHead(r.id, head2, chr, env) // mark chr and Match, if fail unmark chr
 		if ok {
-			senv = append(senv, env2)
-			ok = matchDelHead(rs, r, headList, it+1, nt, ic, env2)
+			senv[ic] = &EnvMap{inBinding: envNew, outBindings: map[int]*EnvMap{}}
+			ok = matchDelHead(rs, r, headList, it+1, nt, senv[ic])
 			if ok {
 				// not unmarkDelCHR(chr), markt == deleted
-				(*head.EMap)[ienv] = senv
+				// (*head.EMap)[ienv] = senv
 				return ok
 			}
 		} else {
-			senv = append(senv, nil)
+			senv[ic] = nil
 		}
 		if mark {
 			unmarkDelCHR(chr)
 		}
 	}
-	(*head.EMap)[ienv] = senv
+	// (*head.EMap)[ienv] = senv
 	return false
 }
 
 // Try to match and trace the del-head 'it' from the 'headlist' ('nt'==len of 'headlist')
 // with the 'ienv'-te environmen 'env'
 // If matching ok, call 'matchKeepHead' or 'checkGuards'
-func traceMatchDelHead(rs *RuleStore, r *chrRule, headList CList, it int, nt int, ienv int, env Bindings) (ok bool) {
+func traceMatchDelHead(rs *RuleStore, r *chrRule, headList CList, it int, nt int, envMap *EnvMap) (ok bool) {
 	var env2 Bindings
 	var mark bool
+	env := envMap.inBinding
 	head := headList[it]
 	head2 := head
 	chrList := readProperConstraintsFromCHR_Store(rs, head, env)
-	TraceHead(3, 3, "match Del-Head (", ienv, ") ", head, " with [")
+	TraceHead(3, 3, "match Del-Head ", head, " with [")
 	len_chr := len(chrList)
 	if len_chr == 0 {
 		// variabel in head
@@ -835,99 +875,102 @@ func traceMatchDelHead(rs *RuleStore, r *chrRule, headList CList, it int, nt int
 	// check in head stored environment map
 	ie := 0
 	len_ie := 0
-	senv, ok := (*head.EMap)[ienv]
-	if ok {
-		TraceEMap(4, 4, head)
-		len_ie = len(senv)
-		// trace
-		TraceHead(4, 3, "match Del-Head (", ienv, ") ", head, " Env: [")
-		first = true
-		for _, e := range senv {
-			if first {
-				first = false
-			} else {
-				Trace(4, ", ")
-			}
-			TraceEnv(4, e)
-		}
-		Traceln(4, "]")
-
-		// End trace
-
-		if lastHead {
-			ie = len_ie
+	senv := envMap.outBindings
+	// senv, ok := (*head.EMap)[ienv]
+	//	if ok {
+	TraceEMap(4, 4, head, envMap)
+	len_ie = len(senv)
+	// trace
+	TraceHead(4, 3, "match Del-Head ", head, " Env: [")
+	first = true
+	for _, e := range senv {
+		if first {
+			first = false
 		} else {
-			if lastDelHead {
-				for ; ie < len_ie; ie++ {
-					env2 = senv[ie]
-					if env2 != nil {
-						chr := chrList[ie]
-						mark = markCHR(chr)
-						if mark {
-							ok = traceMatchKeepHead(rs, r, nil, headList, 0, nt, ie, env2)
-							if ok {
-								return ok
-							}
-							traceUnmarkDelCHR(chr)
+			Trace(4, ", ")
+		}
+		if e != nil {
+			TraceEnv(4, e.inBinding)
+		}
+	}
+	Traceln(4, "]")
+
+	// End trace
+
+	if lastHead {
+		ie = len_ie
+	} else {
+		if lastDelHead {
+			for ; ie < len_ie; ie++ {
+				envOut := senv[ie]
+				if envOut != nil {
+					chr := chrList[ie]
+					mark = markCHR(chr)
+					if mark {
+						ok = traceMatchKeepHead(rs, r, nil, headList, 0, nt, envOut)
+						if ok {
+							return ok
 						}
+						traceUnmarkDelCHR(chr)
 					}
 				}
-			} else { // not a last Del-Head
-				for ; ie < len_ie; ie++ {
-					env2 = senv[ie]
-					if env2 != nil {
-						chr := chrList[ie]
-						mark = markCHR(chr)
-						if mark {
-							ok = traceMatchDelHead(rs, r, headList, it+1, nt, ie, env2)
-							if ok {
-								// not unmarkDelCHR(chr), markt == deleted
-								return ok
-							}
-							traceUnmarkDelCHR(chr)
+			}
+		} else { // not a last Del-Head
+			for ; ie < len_ie; ie++ {
+				envOut := senv[ie]
+				if envOut != nil {
+					chr := chrList[ie]
+					mark = markCHR(chr)
+					if mark {
+						ok = traceMatchDelHead(rs, r, headList, it+1, nt, envOut)
+						if ok {
+							// not unmarkDelCHR(chr), markt == deleted
+							return ok
 						}
-
+						traceUnmarkDelCHR(chr)
 					}
-				} // for ; ie < len_ie; ie++
-			} // ! lastDelHead
-		} // ! lastHead
-	} else {
-		// head.EMap = &EnvMap{}
-		TraceEMap(4, 4, head)
-		senv = []Bindings{}
-		(*head.EMap)[ienv] = senv
-	}
+
+				}
+			} // for ; ie < len_ie; ie++
+		} // ! lastDelHead
+	} // ! lastHead
+	//	} else {
+	//		// head.EMap = &EnvMap{}
+	//		TraceEMap(4, 4, head)
+	//		senv = []Bindings{}
+	//		(*head.EMap)[ienv] = senv
+	//	}
 	// End check in head stored environment map
 	// normal head-check, start at ie (not at 0 !!)
-	TraceHeadln(3, 3, "match del-Head (", ienv, ") ", head, " from: ", ie, " < ", len_chr)
+	TraceHeadln(3, 3, "match del-Head ", head, " from: ", ie, " < ", len_chr)
 	if lastHead {
 		for ok, ic := false, ie; !ok && ic < len_chr; ic++ {
 			chr := chrList[ic]
 			// env = lateRenameVars(env)
 			env2, ok, mark = traceMarkCHRAndMatchDelHead(r.id, head2, chr, env)
 			if ok {
-				senv = append(senv, env2)
+				senv[ic] = &EnvMap{inBinding: env2, outBindings: map[int]*EnvMap{}}
 				// trace senv changes
 
-				TraceHead(4, 3, "New environment ", "Head: ", head.String(), ", Env: (", ienv, ") [", ic, "], =")
+				TraceHead(4, 3, "New environment ", "Head: ", head.String(), ", Env: [", ic, "], =")
 				TraceEnv(4, env2)
 				Traceln(4, "")
 
 				ok = traceCheckGuards(rs, r, env2)
 				if ok {
-					(*head.EMap)[ienv] = senv
-					TraceEMap(4, 4, head)
+					// (*head.EMap)[ienv] = senv
+					TraceEMap(4, 4, head, envMap)
 					return ok
 				}
 			} else {
-				senv = append(senv, nil)
+				senv[ic] = nil
 			}
 			if mark {
 				traceUnmarkDelCHR(chr)
 			}
 		}
-		(*head.EMap)[ienv] = senv
-		TraceEMap(4, 4, head)
+		// (*head.EMap)[ienv] = senv
+		TraceEMap(4, 4, head, envMap)
 		return false
 	}
 	if lastDelHead {
@@ -936,28 +979,28 @@ func traceMatchDelHead(rs *RuleStore, r *chrRule, headList CList, it int, nt int
 			// env = lateRenameVars(env)
 			env2, ok, mark = traceMarkCHRAndMatchDelHead(r.id, head2, chr, env)
 			if ok {
-				senv = append(senv, env2)
+				senv[ic] = &EnvMap{inBinding: env2, outBindings: map[int]*EnvMap{}}
 				// trace senv changes
 
-				TraceHead(4, 3, "New environment ", "Head: ", head.String(), ", Env: (", ienv, ") [", ic, "], =")
+				TraceHead(4, 3, "New environment ", "Head: ", head.String(), ", Env: [", ic, "], =")
 				TraceEnv(4, env2)
 				Traceln(4, "")
 
-				ok = traceMatchKeepHead(rs, r, nil, headList, 0, nt, ic, env2)
+				ok = traceMatchKeepHead(rs, r, nil, headList, 0, nt, senv[ic])
 				if ok {
-					(*head.EMap)[ienv] = senv
-					TraceEMap(4, 4, head)
+					// (*head.EMap)[ienv] = senv
+					TraceEMap(4, 4, head, envMap)
 					return ok
 				}
 			} else {
-				senv = append(senv, nil)
+				senv[ic] = nil
 			}
 			if mark {
 				traceUnmarkDelCHR(chr)
 			}
 		}
-		(*head.EMap)[ienv] = senv
-		TraceEMap(4, 4, head)
+		// (*head.EMap)[ienv] = senv
+		TraceEMap(4, 4, head, envMap)
 		return false
 	}
 
@@ -967,28 +1010,28 @@ func traceMatchDelHead(rs *RuleStore, r *chrRule, headList CList, it int, nt int
 		// env = lateRenameVars(env)  // ???
 		env2, ok, mark = traceMarkCHRAndMatchDelHead(r.id, head2, chr, env) // mark chr and Match, if fail unmark chr
 		if ok {
-			senv = append(senv, env2)
+			senv[ic] = &EnvMap{inBinding: env2, outBindings: map[int]*EnvMap{}}
 			// trace senv changes
 
-			TraceHead(4, 3, "New environment ", "Head: ", head.String(), ", Env: (", ienv, ") [", ic, "], =")
+			TraceHead(4, 3, "New environment ", "Head: ", head.String(), ", Env: [", ic, "], =")
 			TraceEnv(4, env2)
 			Traceln(4, "")
-			ok = traceMatchDelHead(rs, r, headList, it+1, nt, ic, env2)
+			ok = traceMatchDelHead(rs, r, headList, it+1, nt, senv[ic])
 			if ok {
 				// not unmarkDelCHR(chr), markt == deleted
-				(*head.EMap)[ienv] = senv
-				TraceEMap(4, 4, head)
+				// (*head.EMap)[ienv] = senv
+				TraceEMap(4, 4, head, envMap)
 				return ok
 			}
 		} else {
-			senv = append(senv, nil)
+			senv[ic] = nil
 		}
 		if mark {
 			traceUnmarkDelCHR(chr)
 		}
 	}
-	(*head.EMap)[ienv] = senv
-	TraceEMap(4, 4, head)
+	// (*head.EMap)[ienv] = senv
+	TraceEMap(4, 4, head, envMap)
 	return false
 }
 
@@ -1088,11 +1131,12 @@ func unmarkKeepCHR(chr *Compound) {
 // Try to match the keep-head 'it' from the 'headlist' ('nt'==len of 'headlist')
 // with the 'ienv'-te environmen 'env'
 // If matching for all keep-heads ok, call 'checkGuards'
-func matchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CList, it int, nt int, ienv int, env Bindings) (ok bool) {
+func matchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CList, it int, nt int, envMap *EnvMap) (ok bool) {
 	var env2 Bindings
 	var mark bool
 	head := headList[it]
 	head2 := head
+	env := envMap.inBinding
 	chrList := readProperConstraintsFromCHR_Store(rs, head, env)
 	len_chr := len(chrList)
 	if len_chr == 0 {
@@ -1124,34 +1168,34 @@ func matchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CList, it
 	// check in head stored environment map
 	ie := 0
 	len_ie := 0
-	senv, ok := (*head.EMap)[ienv]
-	if ok {
-		len_ie = len(senv)
-		if lastKeepHead {
-			ie = len_ie
-		} else {
-			for ; ie < len_ie; ie++ {
-				env2 = senv[ie]
-				if env2 != nil {
-					chr := chrList[ie]
-					mark = markCHR(chr)
-					if mark {
-						ok = matchKeepHead(rs, r, nil, headList, it+1, nt, ie, env2)
-						if ok {
-							unmarkKeepCHR(chr)
-							return ok
-						}
+	senv := envMap.outBindings
+	//	if ok {
+	len_ie = len(senv)
+	if lastKeepHead {
+		ie = len_ie
+	} else {
+		for ; ie < len_ie; ie++ {
+			envOut := senv[ie]
+			if envOut != nil {
+				chr := chrList[ie]
+				mark = markCHR(chr)
+				if mark {
+					ok = matchKeepHead(rs, r, nil, headList, it+1, nt, envOut)
+					if ok {
 						unmarkKeepCHR(chr)
+						return ok
 					}
+					unmarkKeepCHR(chr)
 				}
 			}
+		}
 
-		} // ! lastHead
-	} else { // if !ok
-		// head.EMap = &EnvMap{}
-		senv = []Bindings{}
-		(*head.EMap)[ienv] = senv
-	}
+	} // ! lastHead
+	//	} else { // if !ok
+	//		// head.EMap = &EnvMap{}
+	//		senv = []Bindings{}
+	//		(*head.EMap)[ienv] = senv
+	//	}
 	// End check in head stored environment map
 	// normal head-check, start at ie (not at 0 !!)
 	if lastKeepHead {
@@ -1159,21 +1203,21 @@ func matchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CList, it
 			chr := chrList[ic]
 			env2, ok, mark = markCHRAndMatchKeepHead(r.id, head2, chr, env)
 			if ok {
-				senv = append(senv, env2)
+				senv[ic] = &EnvMap{inBinding: env2, outBindings: map[int]*EnvMap{}}
 				ok = checkGuards(rs, r, env2)
 				if ok {
 					unmarkKeepCHR(chr)
-					(*head.EMap)[ienv] = senv
+					// (*head.EMap)[ienv] = senv
 					return ok
 				}
 			} else {
-				senv = append(senv, nil)
+				senv[ic] = nil
 			}
 			if mark {
 				unmarkKeepCHR(chr)
 			}
 		}
-		(*head.EMap)[ienv] = senv
+		// (*head.EMap)[ienv] = senv
 		return false
 	}
 
@@ -1183,35 +1227,36 @@ func matchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CList, it
 
 		env2, ok, mark = markCHRAndMatchKeepHead(r.id, head2, chr, env) // mark chr and Match, if fail unmark chr
 		if ok {
-			senv = append(senv, env2)
+			senv[ic] = &EnvMap{inBinding: env2, outBindings: map[int]*EnvMap{}}
 
-			ok = matchKeepHead(rs, r, nil, headList, it+1, nt, ic, env2)
+			ok = matchKeepHead(rs, r, nil, headList, it+1, nt, senv[ic])
 			if ok {
 				unmarkKeepCHR(chr)
-				(*head.EMap)[ienv] = senv
+				// (*head.EMap)[ienv] = senv
 				return ok
 			}
 		} else {
-			senv = append(senv, nil)
+			senv[ic] = nil
 		}
 		if mark {
 			unmarkDelCHR(chr)
 		}
 	}
-	(*head.EMap)[ienv] = senv
+	// (*head.EMap)[ienv] = senv
 	return false
 }
 
 // Try to match and trace the keep-head 'it' from the 'headlist' ('nt'==len of 'headlist')
 // with the 'ienv'-te environmen 'env'
 // If matching for all keep-heads ok, call 'checkGuards'
-func traceMatchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CList, it int, nt int, ienv int, env Bindings) (ok bool) {
+func traceMatchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CList, it int, nt int, envMap *EnvMap) (ok bool) {
 	var env2 Bindings
 	var mark bool
+	env := envMap.inBinding
 	head := headList[it]
 	head2 := head
 	chrList := readProperConstraintsFromCHR_Store(rs, head, env)
-	TraceHead(4, 3, "match keep-Head (", ienv, ") ", head, " with [")
+	TraceHead(4, 3, "match keep-Head ", head, " with [")
 	len_chr := len(chrList)
 	if len_chr == 0 {
 		// variabel in head
@@ -1261,55 +1306,56 @@ func traceMatchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CLis
 	// check in head stored environment map
 	ie := 0
 	len_ie := 0
-	senv, ok := (*head.EMap)[ienv]
-	if !ok {
-		TraceHeadln(4, 4, " !!! head: ", head, " with no Emap[ ", ienv, " ]")
-	}
-	if ok {
-		TraceEMap(4, 4, head)
-		len_ie = len(senv)
-		TraceHeadln(4, 4, " len env (", ienv, ") = ", len_ie)
-		if lastKeepHead {
-			ie = len_ie
-			TraceHeadln(4, 4, " ie == len_ie == ", ie, " = ", len_ie)
-		} else {
-			// trace
-			TraceHead(4, 3, "match Keep-Head (", ienv, ") ", head, " Env: [")
-			first = true
-			for _, e := range senv {
-				if first {
-					first = false
-				} else {
-					Trace(4, ", ")
-				}
-				TraceEnv(4, e)
+	// senv, ok := (*head.EMap)[ienv]
+	senv := envMap.outBindings
+	//	if !ok {
+	//		TraceHeadln(4, 4, " !!! head: ", head, " with no Emap[ ", ienv, " ]")
+	//	}
+	//	if ok {
+	TraceEMap(4, 4, head, envMap)
+	len_ie = len(senv)
+	TraceHeadln(4, 4, " len env = ", len_ie)
+	if lastKeepHead {
+		ie = len_ie
+		TraceHeadln(4, 4, " ie == len_ie == ", ie, " = ", len_ie)
+	} else {
+		// trace
+		TraceHead(4, 3, "match Keep-Head ", head, " Env: [")
+		first = true
+		for _, e := range senv {
+			if first {
+				first = false
+			} else {
+				Trace(4, ", ")
 			}
-			Traceln(4, "]")
+			TraceEnv(4, e.inBinding)
+		}
+		Traceln(4, "]")
 
-			// End trace
-			for ; ie < len_ie; ie++ {
-				env2 = senv[ie]
-				if env2 != nil {
-					chr := chrList[ie]
-					mark = markCHR(chr)
-					TraceHeadln(4, 4, " mark keep chr:", chr.String(), " = ", mark)
-					if mark {
-						ok = traceMatchKeepHead(rs, r, nil, headList, it+1, nt, ie, env2)
-						if ok {
-							traceUnmarkKeepCHR(chr)
-							return ok
-						}
+		// End trace
+		for ; ie < len_ie; ie++ {
+			envOut := senv[ie]
+			if envOut != nil {
+				chr := chrList[ie]
+				mark = markCHR(chr)
+				TraceHeadln(4, 4, " mark keep chr:", chr.String(), " = ", mark)
+				if mark {
+					ok = traceMatchKeepHead(rs, r, nil, headList, it+1, nt, envOut)
+					if ok {
 						traceUnmarkKeepCHR(chr)
+						return ok
 					}
+					traceUnmarkKeepCHR(chr)
 				}
 			}
+		}
 
-		} // ! lastHead
-	} else { // if !ok
-		// head.EMap = &EnvMap{}
-		senv = []Bindings{}
-		(*head.EMap)[ienv] = senv
-	}
+	} // ! lastHead
+	//	} else { // if !ok
+	//		// head.EMap = &EnvMap{}
+	//		senv = []Bindings{}
+	//		(*head.EMap)[ienv] = senv
+	//	}
 	// End check in head stored environment map
 	// normal head-check, start at ie (not at 0 !!)
 	TraceHeadln(4, 3, "match keep-Head ", head, " from: ", ie, " < ", len_chr)
@@ -1318,29 +1364,29 @@ func traceMatchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CLis
 			chr := chrList[ic]
 			env2, ok, mark = traceMarkCHRAndMatchKeepHead(r.id, head2, chr, env)
 			if ok {
-				senv = append(senv, env2)
+				senv[ic] = &EnvMap{inBinding: env2, outBindings: map[int]*EnvMap{}}
 				// trace senv changes
 
-				TraceHead(4, 3, "New environment ", "Head: ", head.String(), ", Env (", ienv, ") [", ic, "], =")
+				TraceHead(4, 3, "New environment ", "Head: ", head.String(), ", Env [", ic, "], =")
 				TraceEnv(4, env2)
 				Traceln(4, "")
 
 				ok = traceCheckGuards(rs, r, env2)
 				if ok {
 					traceUnmarkKeepCHR(chr)
-					(*head.EMap)[ienv] = senv
-					TraceEMap(4, 4, head)
+					// (*head.EMap)[ienv] = senv
+					TraceEMap(4, 4, head, envMap)
 					return ok
 				}
 			} else {
-				senv = append(senv, nil)
+				senv[ic] = nil
 			}
 			if mark {
 				traceUnmarkKeepCHR(chr)
 			}
 		}
-		(*head.EMap)[ienv] = senv
-		TraceEMap(4, 4, head)
+		// (*head.EMap)[ienv] = senv
+		TraceEMap(4, 4, head, envMap)
 		return false
 	}
 
@@ -1350,29 +1396,29 @@ func traceMatchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CLis
 
 		env2, ok, mark = traceMarkCHRAndMatchKeepHead(r.id, head2, chr, env) // mark chr and Match, if fail unmark chr
 		if ok {
-			senv = append(senv, env2)
+			senv[ic] = &EnvMap{inBinding: env2, outBindings: map[int]*EnvMap{}}
 			// trace senv changes
 
-			TraceHead(4, 3, "New environment ", "Head: ", head.String(), ", Env: (", ienv, ") [", ic, "], =")
+			TraceHead(4, 3, "New environment ", "Head: ", head.String(), ", Env:  [", ic, "], =")
 			TraceEnv(4, env2)
 			Traceln(4, "")
 
-			ok = traceMatchKeepHead(rs, r, nil, headList, it+1, nt, ic, env2)
+			ok = traceMatchKeepHead(rs, r, nil, headList, it+1, nt, senv[ic])
 			if ok {
 				traceUnmarkKeepCHR(chr)
-				(*head.EMap)[ienv] = senv
-				TraceEMap(4, 4, head)
+				// (*head.EMap)[ienv] = senv
+				TraceEMap(4, 4, head, envMap)
 				return ok
 			}
 		} else {
-			senv = append(senv, nil)
+			senv[ic] = nil
 		}
 		if mark {
 			unmarkDelCHR(chr)
 		}
 	}
-	(*head.EMap)[ienv] = senv
-	TraceEMap(4, 4, head)
+	// (*head.EMap)[ienv] = senv
+	TraceEMap(4, 4, head, envMap)
 	return false
 }
 

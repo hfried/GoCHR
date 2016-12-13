@@ -6,10 +6,11 @@
 
 // Constraint Handling Rules
 
-package parser
+package chr
 
 import (
 	"fmt"
+
 	. "github.com/hfried/GoCHR/src/engine/terms"
 	// "math/big"
 	// "strconv"
@@ -81,20 +82,27 @@ func TraceEnv(l int, e Bindings) {
 	}
 }
 
-func TraceEMap(l int, n int, h *Compound) {
+func TraceEMap(l int, n int, h *Compound, eMap *EnvMap) {
 	if CHRtrace >= l {
 		for i := 0; i < n; i++ {
 			fmt.Printf("      ")
 		}
-		fmt.Printf("*** head: %s [ ", h.String())
-		env := h.EMap
-		for i, e := range *env {
+		fmt.Printf("*** head: %s inBind: ", h.String())
+		TraceEnv(l, eMap.inBinding)
+		fmt.Printf(" outBind:[")
+		env := eMap.outBindings
+		for i, e := range env {
 			fmt.Printf("[ %d ] =", i)
-			for _, e1 := range e {
-				TraceEnv(l, e1)
+			// for _, e1 := range e.inBinding {
+			if e == nil {
+				fmt.Printf("NIL")
+			} else {
+				TraceEnv(l, e.inBinding)
 			}
-			fmt.Printf(" || ")
+
+			// }
+			fmt.Printf(" | ")
 		}
-		fmt.Printf("\n")
+		fmt.Printf("]\n")
 	}
 }

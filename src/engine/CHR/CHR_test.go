@@ -136,7 +136,7 @@ func TestCHRRule00(t *testing.T) {
 //	sum([1,X,3], 6).
 //	#result: X == 2 .
 	`)
-	CHRtrace = 1
+	CHRtrace = 0
 	if !ok {
 		t.Error("TestCHRRule00 fails")
 	}
@@ -209,7 +209,7 @@ func TestCHRRule02(t *testing.T) {
 	gcd(12), gcd(27).
 	#result: gcd(3), L2:=15, L4:=3, L6:=9, L8:=6, L10:=3, L12:=0 .
 	gcd(12),gcd(18).
-	#result: gcd(6), L2:=6, L4:=6, L6:=0 . 
+	#result: gcd(6), L2:=6, L4:=6, L6:=0 .
 	`)
 	if !ok {
 		t.Error("TestCHRRule02 fails")
@@ -672,4 +672,28 @@ func TestRS01(t *testing.T) {
 	//	fmt.Printf("\nresult: %v = %v \n", rBool, rList)
 	//	checkResult(rs, t, "", "X == 2")
 	//	CHRtrace = 0
+}
+
+func TestCHRRule20(t *testing.T) {
+	CHRtrace = 3
+	src := `
+gov_stats_scheme @ gov_stats(C,S) ==> safety(C,S), argument(gov_stats_scheme,[C,S]).
+advertising_scheme @ advertising(C,S) ==> safety(C,S), argument(advertising_scheme,[C,S]).
+car_buying_scheme @ price(C,P), type(C,T), speed(C,S), safety(C,F) ==> buy(C), argument(car_buying_scheme,[C,P,S,F,T]).
+price(volvo,medium), price(porsche,high), advertising(volvo,high), safety(porsche,medium), speed(porsche,fast), type(porsche,sports), type(volvo,family),   gov_stats(volvo,medium), speed(volvo,medium).
+// advertising(volvo,high), type(volvo,family), price(porsche,high), type(porsche,sports), price(volvo,medium), speed(porsche,fast), gov_stats(volvo,medium), speed(volvo,medium), safety(porsche,medium).
+// #result: implies(rot, blau), implies(blau,grün), rot, gelb, blau, grün .
+`
+
+	var s sc.Scanner
+	// Initialize the scanner.
+	s.Init(strings.NewReader(src))
+
+	s.Error = Err
+	rs := MakeRuleStore()
+	ok := parseEvalRules(rs, &s)
+
+	if !ok {
+		t.Error("TestCHRRule20 fails")
+	}
 }

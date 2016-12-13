@@ -45,7 +45,7 @@ func toClist(l Term) (CList, bool) {
 			return cl, false
 		}
 		t2 := t1.(Compound)
-		t2.EMap = &EnvMap{}
+		//		t2.EMap = &EnvMap{}
 		cl = append(cl, &t2)
 	}
 	return cl, true
@@ -294,9 +294,11 @@ func parseEvalRules(rs *RuleStore, s *sc.Scanner) (ok bool) {
 			if rule != nil {
 				if newGoals {
 					InitStore(rs)
+					rule.eMap = &EnvMap{inBinding: rs.emptyBinding, outBindings: map[int]*EnvMap{}}
 					rs.CHRruleStore = []*chrRule{rule}
 					newGoals = false
 				} else {
+					rule.eMap = &EnvMap{inBinding: rs.emptyBinding, outBindings: map[int]*EnvMap{}}
 					rs.CHRruleStore = append(rs.CHRruleStore, rule)
 					rs.nextRuleId++
 				}
@@ -633,7 +635,8 @@ func addChrRule(rs *RuleStore, s *sc.Scanner, name string, keepList, delList, gu
 		delHead:  cDelList,
 		keepHead: cKeepList,
 		guard:    cGuardList,
-		body:     bodyList.(List)})
+		body:     bodyList.(List),
+		eMap:     &EnvMap{inBinding: rs.emptyBinding, outBindings: map[int]*EnvMap{}}})
 	rs.nextRuleId++
 	return true
 }
@@ -786,7 +789,7 @@ func prove2Clist(ty parseType, name string, t Term, s *sc.Scanner) (cl CList, ok
 				CHRerr(s, " unexpected Build-In predicate ", t, " in head of rule ", name)
 				return cl, false
 			}
-			comp.EMap = &EnvMap{}
+			//			comp.EMap = &EnvMap{}
 			cl = append(cl, &comp)
 			return cl, true
 		case ParseBI: // only Build-In
@@ -812,9 +815,9 @@ func prove2Clist(ty parseType, name string, t Term, s *sc.Scanner) (cl CList, ok
 			}
 			t2 := t1.(Compound)
 
-			if ty == ParseHead {
-				t2.EMap = &EnvMap{}
-			}
+			//			if ty == ParseHead {
+			//				t2.EMap = &EnvMap{}
+			//			}
 			cl = append(cl, &t2)
 		}
 		return cl, true

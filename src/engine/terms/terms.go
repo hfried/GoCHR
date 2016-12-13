@@ -44,13 +44,13 @@ type Int int
 type Float float64
 type String string
 
-type EnvMap map[int][]Bindings
+// type EnvMap map[int][]Bindings
 
 type Compound struct {
-	Functor           string
-	Id                *big.Int
-	Prio              int
-	EMap              *EnvMap
+	Functor string
+	Id      *big.Int
+	Prio    int
+	//	EMap              *EnvMap
 	occurVars         Vars
 	identifyOccurVars bool
 	IsDeleted         bool
@@ -102,10 +102,10 @@ func EqVars(v1, v2 Variable) bool {
 
 func CopyCompound(c Compound) (c1 Compound) {
 	c1 = Compound{
-		Functor:           c.Functor,
-		Id:                c.Id,
-		Prio:              c.Prio,
-		EMap:              c.EMap,
+		Functor: c.Functor,
+		Id:      c.Id,
+		Prio:    c.Prio,
+		//		EMap:              c.EMap,
 		occurVars:         c.occurVars,
 		identifyOccurVars: c.identifyOccurVars,
 		IsDeleted:         c.IsDeleted,
