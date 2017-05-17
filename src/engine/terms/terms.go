@@ -127,6 +127,11 @@ type BindEle struct {
 	Next Bindings
 }
 
+type EnvMap struct {
+	InBinding   Bindings
+	OutBindings map[int]*EnvMap
+}
+
 func AddBinding(v Variable, t Term, b Bindings) Bindings {
 	// fmt.Printf(" Add Binding %s-%d == %s \n", v.String(), v.index, t.String())
 	return &BindEle{Var: v, T: t, Next: b}
@@ -621,6 +626,110 @@ func Match(t1, t2 Term, env Bindings) (env2 Bindings, ok bool) {
 		// for i, _ := range t1.(List) {
 		for i := 0; i < lent1; i++ {
 			env2, ok = Match(t1.(List)[i], t2.(List)[i], env2)
+			if !ok {
+				return env, false
+			}
+		}
+		// update env with the new bindings
+		env = env2
+		/*	for v, t := range env2 {
+			env[v] = t
+		} */
+		return env, true
+
+	case VariableType:
+		t3, ok := GetBinding(t1.(Variable), env)
+		if !ok { // variable was not yet bound in env
+			env = AddBinding(t1.(Variable), t2, env)
+			return env, true
+		} else {
+			// return true only if the two instances of the variable
+			// would be bound to the same term
+			if Equal(t2, t3) {
+				return env, true
+			} else {
+				return env, false
+			}
+		}
+	default:
+		return env, false
+	}
+}
+
+func TraceMatch(t1, t2 Term, env Bindings) (env2 Bindings, ok bool) {
+	TraceHeadln(3, 3, " > TraceMatch t1=", t1, " t2=", t2, " env=", env)
+	env2, ok = Match1(t1, t2, env)
+	TraceHeadln(3, 3, " < TraceMatch t1=", t1, " t2=", t2, " is ", ok, " env=", env2)
+	return
+}
+
+func Match1(t1, t2 Term, env Bindings) (env2 Bindings, ok bool) {
+	if t1.Type() != VariableType && t1.Type() != t2.Type() {
+		return env, false
+	}
+	switch t1.Type() {
+	case AtomType, BoolType, IntType, FloatType, StringType:
+		return env, Equal(t1, t2)
+	case CompoundType:
+		if t1.(Compound).Functor != t2.(Compound).Functor ||
+			t1.(Compound).Arity() != t2.(Compound).Arity() {
+			return env, false
+		}
+		env2 := env
+		for i, _ := range t1.(Compound).Args {
+			env2, ok = TraceMatch(t1.(Compound).Args[i], t2.(Compound).Args[i], env2)
+			if !ok {
+				return env, false
+			}
+		}
+		// update env with the new bindings
+		env = env2
+		/*		for v, t := range env2 {
+				env[v] = t
+			} */
+		return env, true
+	case ListType:
+		lent1 := len(t1.(List))
+		lent2 := len(t2.(List))
+		if lent1 == 0 {
+			if lent2 == 0 {
+				return env, true
+			} else {
+				return env, false
+			}
+		}
+		lent1m1 := lent1 - 1
+		last := t1.(List)[lent1m1]
+		if last.Type() == CompoundType && last.(Compound).Functor == "|" {
+			if lent2 < lent1m1 {
+				return env, false
+			}
+			env2 := env
+			for i := 0; i < lent1m1; i++ {
+				env2, ok = TraceMatch(t1.(List)[i], t2.(List)[i], env2)
+				if !ok {
+					return env, false
+				}
+			}
+			v := last.(Compound).Args[0]
+			if lent2 == lent1m1 {
+				env2, ok = TraceMatch(v, List{}, env2)
+			} else {
+				env2, ok = TraceMatch(v, t2.(List)[lent1m1:], env2)
+			}
+			if !ok {
+				return env, false
+			}
+			env = env2
+			return env, true
+		}
+		if lent1 != lent2 {
+			return env, false
+		}
+		env2 := env
+		// for i, _ := range t1.(List) {
+		for i := 0; i < lent1; i++ {
+			env2, ok = TraceMatch(t1.(List)[i], t2.(List)[i], env2)
 			if !ok {
 				return env, false
 			}
