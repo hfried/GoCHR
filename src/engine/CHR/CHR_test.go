@@ -7,7 +7,7 @@
 package chr
 
 import (
-	// "fmt"
+	"fmt"
 	"strings"
 	"testing"
 	sc "text/scanner"
@@ -124,7 +124,7 @@ func TestCHR12(t *testing.T) {
 //		t.Errorf("TestStore02 failed\n")
 //	}
 //}
-
+*/
 func TestCHRRule00(t *testing.T) {
 	CHRtrace = 0
 	rs := MakeRuleStore()
@@ -159,8 +159,7 @@ func TestCHRRule01(t *testing.T) {
 		t.Error("TestCHRRule01 fails")
 	}
 }
-*/
-/*
+
 func TestCHRRule02(t *testing.T) {
 	CHRtrace = 0
 	rs := MakeRuleStore()
@@ -218,8 +217,7 @@ func TestCHRRule02(t *testing.T) {
 		t.Error("TestCHRRule02 fails")
 	}
 }
-*/
-/*
+
 func TestCHRRule04(t *testing.T) {
 	CHRtrace = 0
 	rs := MakeRuleStore()
@@ -409,8 +407,8 @@ add(X,X,s(s(0))).
 		t.Error("TestCHRRule10 fails")
 	}
 }
-*/
-/*
+
+/* not OK
 func TestCHRRule11(t *testing.T) {
 	CHRtrace = 0
 	src := `
@@ -452,7 +450,7 @@ implies(farbe(rot), farbe(blau)), farbe(rot) .
 	}
 }
 */
-/* ok
+
 func TestCHRRule12(t *testing.T) {
 	CHRtrace = 0
 	src := `
@@ -473,7 +471,7 @@ implies(farbe(rot), farbe(blau)), farbe(rot) .
 		t.Error("TestCHRRule12 fails")
 	}
 }
-*/
+
 /*
 func TestCHRRule13(t *testing.T) {
 	CHRtrace = 0
@@ -517,7 +515,7 @@ implies(rot(), blau()), rot() .
 	}
 }
 */
-/* OK
+
 func TestCHRRule15(t *testing.T) {
 	CHRtrace = 0
 	src := `
@@ -538,7 +536,7 @@ implies(rot(), blau()), rot() .
 		t.Error("TestCHRRule15 fails")
 	}
 }
-*/
+
 /*
 func TestCHRRule16(t *testing.T) {
 	CHRtrace = 0
@@ -581,7 +579,7 @@ implies(rot, blau), rot .
 	}
 }
 */
-/* ok
+
 func TestCHRRule18(t *testing.T) {
 	CHRtrace = 0
 	src := `
@@ -601,7 +599,7 @@ implies(rot, blau), rot .
 		t.Error("TestCHRRule18 fails")
 	}
 }
-*/
+
 /*
 func TestCHRRule19(t *testing.T) {
 	CHRtrace = 0
@@ -623,7 +621,7 @@ implies(rot, blau), implies(blau,grün), rot, gelb .
 		t.Error("TestCHRRule19 fails")
 	}
 }
-
+*/
 func TestRS01(t *testing.T) {
 	rs := MakeRuleStore()
 	keep := []string{}
@@ -686,7 +684,6 @@ func TestRS01(t *testing.T) {
 	//	CHRtrace = 0
 }
 
-
 func TestCHRRule20(t *testing.T) {
 	CHRtrace = 0
 	src := `
@@ -710,7 +707,6 @@ price(volvo,medium), price(porsche,high), advertising(volvo,high), safety(porsch
 		t.Error("TestCHRRule20 fails")
 	}
 }
-*/
 
 func TestCHRRule21a(t *testing.T) {
 	CHRtrace = 1
@@ -739,7 +735,6 @@ dataUseStatement(dus(capability,id01)),
 	}
 }
 
-/*
 func TestCHRRule21(t *testing.T) {
 	CHRtrace = 1
 	src := `selectors @ dataUseStatement(dus(UseScope,Qualifier,DataCategory,SourceScope,Action,ResultScope,ID,Passive)) ==> resultScope(dus(ResultScope,ID),ResultScope).
@@ -767,7 +762,7 @@ dataUseStatement(dus(capability,identified_data,provider_data_authentication,cap
 		t.Error("TestCHRRule21 fails")
 	}
 }
-*/
+
 /*
 func TestCHRRule21(t *testing.T) {
 	CHRtrace = 1
