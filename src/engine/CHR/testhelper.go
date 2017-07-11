@@ -169,12 +169,18 @@ func tAddStringChrRule(rs *RuleStore, t *testing.T, name, keep, del, guard, body
 		return false
 	}
 
-	rs.CHRruleStore = append(rs.CHRruleStore, &chrRule{name: name, id: rs.nextRuleId,
+	r := &chrRule{name: name, id: rs.nextRuleId,
 		delHead:  cDelList,
 		keepHead: cKeepList,
+		keepEnv:  makeKeepEnv(cKeepList),
 		guard:    cGuardList,
 		body:     bodyList.(List),
-		eMap:     &EnvMap{inBinding: rs.emptyBinding, outBindings: map[int]*EnvMap{}}})
+		eMap:     &EnvMap{InBinding: rs.emptyBinding, OutBindings: map[int]*EnvMap{}},
+		isOn:     false,
+		wasOn:    true}
+	rs.CHRruleStore = append(rs.CHRruleStore, r)
+	TraceHeadln(3, 3, " OFF rule: ", name, " (t Add String CHR-Rule) ")
+	addRuleToPred2rule(rs, r)
 	rs.nextRuleId++
 	return true
 

@@ -1,0 +1,678 @@
+// Copyright © 2016 The Carneades Authors
+// This Source Code Form is subject to the terms of the
+// Mozilla Public License, v. 2.0. If a copy of the MPL
+// was not distributed with this file, You can obtain one
+// at http://mozilla.org/MPL/2.0/.
+
+// parse Constraint Handling Rules
+
+package chr
+
+import (
+	"fmt"
+	. "github.com/hfried/GoCHR/src/engine/parser"
+	. "github.com/hfried/GoCHR/src/engine/terms"
+	"io"
+	"os"
+	"strings"
+	sc "text/scanner"
+)
+
+type parseType int
+
+const (
+	ParseHead parseType = iota
+	ParseBI
+	ParseGoal     // CHR and Built-In
+	ParseRuleBody // Chr, Built-In, true, false and Variable
+)
+
+func CHRerr(format string, a ...interface{}) {
+	fmt.Fprintln(os.Stderr, format, a)
+}
+
+func toClist(l Term) (CList, bool) {
+	cl := CList{}
+// ...
+	return cl, true
+}
+
+// parse CHR-rules and goals from string src
+// CHR-Rules:
+// ----------
+// [<rulename>] '@' <keep-heads> '==>' [<guards> '|'] <body> '.'
+// [<rulename>] '@' <keep-heads> '/' <del-heads> '<=>' [<guards> '|'] <body>'.'
+// [<rulename>] '@' <del-heads> '<=>' [<guards> '|'] <body>'.'
+// ----------
+// goals:
+// ----------
+// <predicates> '.'
+// ----------
+// TEST:
+// ----------
+// #result: <guards>
+
+func (rs *RuleStore) ParseStringCHRRulesGoals(src string) (ok bool) {
+	// src is the input that we want to tokenize.
+    // ...
+	return  parseEvalRules(rs, &s)
+}
+
+func (rs *RuleStore) ParseFileCHRRulesGoals(inFile io.Reader) (ok bool) {
+	// src is the input that we want to tokenize.
+    // ...
+	return = parseEvalRules(rs, &s)
+}
+
+func parseEvalRules(rs *RuleStore, s *sc.Scanner) (ok bool) {
+
+	//        C O N I T I O N S         ||            R E S U L T
+	// newGoals | new rules | new goals || RuleStore | CHRStore  | newGoals
+	// ---------------------------------||----------------------------------
+	//   false  |   true    |    -      || add rules |     -     |  false
+	//   false  |     -     |   true    ||           | new goals |  true
+	//                                               | & solve   |
+	//   true   |   true    |    -      || new rules |     -     |  false
+	//   true   |   false   |   true    ||           | new goals |  true
+	//                                               | && solve  |
+
+	InitStore(rs)
+
+	for tok != sc.EOF {
+
+		switch tok {
+		case sc.Ident:
+			t, tok, ok = Factor_name(s.TokenText(), s, s.Scan())
+
+			if tok == '@' {
+				tok, rule, goals, ok = parseKeepHead(rs, s, s.Scan(), t.String())
+			} else {
+				tok, rule, goals, ok = parseKeepHead1(rs, s, tok, fmt.Sprintf("(%d)", nameNr), t)
+				nameNr++
+			}
+
+			if rule != nil {
+				if newGoals {
+					InitStore(rs)
+					rs.CHRruleStore = []*chrRule{rule}
+					newGoals = false
+				} else {
+					rs.CHRruleStore = append(rs.CHRruleStore, rule)
+					rs.nextRuleId++
+				}
+			}
+			if goals != nil {
+				if newGoals {
+					ClearCHRStore(rs)
+				} else {
+					newGoals = true
+				}
+
+				for _, g := range goals {
+					addRefConstraintToStore(rs, g)
+				}
+
+				CHRsolver(rs)
+			    printCHRStore(rs, "Result: ")
+			}
+
+		case '#':
+			tok = s.Scan()
+				switch s.TokenText() {
+				case "store", "result":
+					tok = s.Scan()
+					if tok == '=' || tok == ':' {
+						tok1 = s.Peek()
+						if tok1 == '=' {
+							tok = s.Scan()
+						}
+					}
+					// read and compare exspected result
+					t, tok, ok = parseConstraints(ParseRuleBody, s)
+
+					if tok == '.' {
+						tok = s.Scan()
+					}
+                    // Check esults 
+					compCHR := chr2List(rs)
+					chrOK := EqualVarNameCList(compCHR, t)
+					compBI := bi2List(rs)
+					biOK := EqualVarNameCList(compBI, t)
+					if chrOK || biOK {
+						continue
+					} ...
+
+				case "bistore":
+					if tok == '=' {
+						tok = s.Scan()
+						if tok == '=' {
+							tok = s.Scan()
+						}
+					}
+					// read and compare exspected bi-result
+
+				}
+			
+
+		default:
+			Err(s, fmt.Sprintf("Missing a rule-name, a predicate-name or a '#' at the beginning (not \"%v\")", Tok2str(tok)))
+			return false
+		}
+
+	}
+	return true
+}
+
+// parseKeepHead - it is not clear, a goal-list or a head-list
+// - name: the name of the rule
+func parseKeepHead(rs *RuleStore, s *sc.Scanner, tok rune, name string) (rune, *chrRule, CList, bool) {
+// ...
+	t, tok, ok := Factor_name(s.TokenText(), s, s.Scan())
+	return parseKeepHead1(rs, s, tok, name, t)
+}
+
+// parseKeepHead1 - it is not clear, a goal-list or a head-list
+// - name: the name of the rule
+// - t: the first predicate
+func parseKeepHead1(rs *RuleStore, s *sc.Scanner, tok rune, name string, t Term) (tok1 rune, rule *chrRule, cl CList, ok bool) {
+
+	keepList := List{t}
+
+	for tok == ',' {
+		tok = s.Scan()
+        // ...
+		t, tok, ok = Factor_name(s.TokenText(), s, s.Scan())
+		keepList = append(keepList, t)
+	}
+
+	if tok == '.' {
+		// Goals-List
+		cGoalList, ok := prove2Clist(ParseGoal, name, keepList)
+		return s.Scan(), nil, cGoalList, true
+	}
+
+	// keep- or del-head
+	cKeepList, ok := prove2Clist(ParseHead, name, keepList)
+	var delList Term
+	switch tok {
+	case '\\', '|':
+		delList, tok, ok = parseDelHead(s, s.Scan())
+
+		cDelList, ok := prove2Clist(ParseHead, name, delList)
+
+		if tok != '<' { // Error 
+		}
+		tok = s.Scan()
+		if tok != '=' { // Error
+		}
+		tok = s.Scan()
+		if tok != '>' { // Error
+		}
+		return parseGuardHead(rs, s, s.Scan(), name, cKeepList, cDelList)
+
+	case '<':
+		tok = s.Scan()
+		if tok != '=' { // Error
+		}
+		tok = s.Scan()
+		if tok != '>' { // Error
+		}
+		// the scaned keep-list is the del-list
+		return parseGuardHead(rs, s, s.Scan(), name, nil, cKeepList)
+	case '=':
+		tok = s.Scan()
+		if tok != '=' { // Error
+		}
+		tok = s.Scan()
+		if tok != '>' { // Error
+		}
+		return parseGuardHead(rs, s, s.Scan(), name, cKeepList, nil)
+	default: // Error
+	}
+	return tok, nil, nil, false
+}
+
+func parseDelHead(s *sc.Scanner, tok rune) (delList List, tok1 rune, ok bool) {
+	var t Term
+    // ...
+	t, tok1, ok = Factor_name(s.TokenText(), s, s.Scan())
+
+	delList = append(delList, t)
+	for tok1 == ',' {
+		tok = s.Scan()
+        // ...
+		t, tok1, ok = Factor_name(s.TokenText(), s, s.Scan())
+
+		delList = append(delList, t)
+	}
+	return
+}
+
+// parseGuardHead - it is no clear, if it a guard or body
+func parseGuardHead(rs *RuleStore, s *sc.Scanner, tok rune, name string, cKeepList, cDelList CList) (tok1 rune, rule *chrRule, goals CList, ok bool) {
+
+	bodyList, tok, ok := parseConstraints1(ParseRuleBody, s, tok)
+
+	cGuardList := CList{}
+	switch tok {
+	case '.':
+		tok = s.Scan()
+	case '|':
+		cGuardList, ok = prove2Clist(ParseBI, name, bodyList)
+		tok = s.Scan()
+		bodyList, tok, ok = parseConstraints1(ParseRuleBody, s, tok)
+
+		if tok != '.' { // Error
+		}
+		tok = s.Scan()
+	default: // Error
+	}
+
+	return tok, &chrRule{name: name, id: rs.nextRuleId,
+		delHead:  cDelList,
+		keepHead: cKeepList,
+		guard:    cGuardList,
+		body:     bodyList.(List)}, nil, true
+}
+
+func addChrRule(rs *RuleStore, name string, keepList, delList, guardList, bodyList Term) bool {
+
+	cKeepList, ok := prove2Clist(ParseHead, name, keepList)
+
+	cDelList, ok := prove2Clist(ParseHead, name, delList)
+
+	cGuardList, ok := prove2Clist(ParseBI, name, guardList)
+
+	rs.CHRruleStore = append(rs.CHRruleStore, &chrRule{name: name, id: rs.nextRuleId,
+		delHead:  cDelList,
+		keepHead: cKeepList,
+		guard:    cGuardList,
+		body:     bodyList.(List)})
+	rs.nextRuleId++
+	return true
+}
+
+func addStringGoals(rs *RuleStore, goals string) bool {
+	goalList, ok := ParseGoalString(goals)
+ 
+	for _, g := range goalList.(List) {
+		if g.Type() == CompoundType {
+			addConstraintToStore(rs, g.(Compound))
+		} else { // Error
+        }
+	}
+	return true
+}
+
+func ParseHeadString(src string) (result Term, ok bool) {
+	// src is the input that we want to tokenize.
+
+	result, _, ok = parseConstraints(ParseHead, &s)
+	return
+}
+
+func ParseBIString(src string) (result Term, ok bool) {
+	// src is the input that we want to tokenize.
+
+	result, _, ok = parseConstraints(ParseBI, &s)
+	return
+}
+
+func ParseRuleBodyString(src string) (result Term, ok bool) {
+	// src is the input that we want to tokenize.
+
+	result, _, ok = parseConstraints(ParseRuleBody, &s)
+	return
+}
+
+func ParseGoalString(src string) (result Term, ok bool) {
+	// src is the input that we want to tokenize.
+
+	result, _, ok = parseConstraints(ParseGoal, &s)
+	return
+}
+
+func prove2Clist(ty parseType, name string, t Term) (cl CList, ok bool) {
+	// ty == ParseCHR, ParseBI, ParseGoal-CHR and Built-In,
+	// no: ParseRuleGoal-Chr, Built-In and Variable
+	cl = CList{}
+	switch t.Type() {
+	case AtomType:
+		switch ty {
+		case ParseHead: // Error
+		case ParseBI:   // Error
+		case ParseGoal: // Error
+		}
+	case BoolType:
+		switch ty {
+		case ParseHead: // Error
+		case ParseBI:   // Error
+		case ParseGoal: // Error
+		}
+	case IntType:
+		switch ty {
+		case ParseHead: // Error
+		case ParseBI:   // Error
+		case ParseGoal: // Error
+		}
+	case FloatType:
+		switch ty {
+		case ParseHead: // Error
+		case ParseBI:   // Error
+		case ParseGoal: // Error
+		}
+	case StringType:
+		switch ty {
+		case ParseHead: // Error
+		case ParseBI:   // Error
+		case ParseGoal: // Error
+		}
+	case CompoundType:
+		comp := t.(Compound)
+		switch ty {
+		case ParseHead: // CHR, no Build-In
+			if comp.Prio != 0 { // Error
+			}
+			comp.EMap = &EnvMap{}
+			cl = append(cl, &comp)
+			return cl, true
+		case ParseBI: // only Build-In
+			if comp.Prio == 0 { // Error
+			}
+			cl = append(cl, &comp)
+			return cl, true
+		case ParseGoal: // both
+			cl = append(cl, &comp)
+			return cl, true
+		}
+	case ListType:
+
+		for _, t1 := range t.(List) {
+			if ty == ParseHead && t1.Type() == VariableType {
+				t1 = Compound{Functor: "", Args: []Term{t1}}
+			} else {
+				if t1.Type() != CompoundType {
+					return prove2Clist(ty, name, t1)
+				}
+			}
+			t2 := t1.(Compound)
+
+			if ty == ParseHead {
+				t2.EMap = &EnvMap{}
+			}
+			cl = append(cl, &t2)
+		}
+		return cl, true
+
+	case VariableType:
+		switch ty {
+		case ParseHead: // Error
+		case ParseBI:   // Error
+		case ParseGoal: // Error
+		}
+	}
+	return nil, false
+}
+
+func parseConstraints(ty parseType, s *sc.Scanner) (t Term, tok rune, ok bool) {
+
+	return parseConstraints1(ty, s, s.Scan())
+}
+
+func parseConstraints1(ty parseType, s *sc.Scanner, tok1 rune) (t Term, tok rune, ok bool) {
+
+	tok = tok1
+	if tok == sc.EOF {
+		return List{}, tok, true
+	}
+
+	t, tok, ok = Assignexpr(s, tok)
+	if !ok {
+		return
+	}
+	switch ty {
+	case ParseHead:
+		if t.Type() != CompoundType || t.(Compound).Prio != 0 { // Error
+		}
+	case ParseBI:
+		if t.Type() != CompoundType || t.(Compound).Prio == 0 { // Error
+		}
+	case ParseGoal:
+		if t.Type() != CompoundType { // Error
+		}
+	case ParseRuleBody:
+		if t.Type() != CompoundType && t.Type() != VariableType && t.Type() != BoolType { // Error
+		}
+	}
+
+	if tok == ',' {
+		t1 := List{t}
+		for tok == ',' {
+			t, tok, ok = Assignexpr(s, s.Scan())
+
+			switch ty {
+			case ParseHead:
+				if t.Type() != CompoundType || t.(Compound).Prio != 0 { // Error
+				}
+			case ParseBI:
+				if t.Type() != CompoundType || t.(Compound).Prio == 0 { // Error
+				}
+			case ParseGoal:
+				if t.Type() != CompoundType { // Error
+				}
+			case ParseRuleBody:
+				if t.Type() != CompoundType && t.Type() != VariableType && t.Type() != BoolType { // Error
+				}
+			}
+			t1 = append(t1, t)
+		}
+		t = t1
+	} else {
+		t = List{t}
+	}
+	return
+}
+
+func parseBIConstraint(s *sc.Scanner) (t Term, tok rune, ok bool) {
+
+	tok = s.Scan()
+	if tok == sc.EOF {
+		return List{}, tok, true
+	}
+
+	t, tok, ok = Assignexpr(s, tok)
+
+	if t.Type() != CompoundType || t.(Compound).Prio == 0 { // Error
+	}
+
+	if tok == sc.EOF || !ok {
+		return
+	}
+	if tok == ',' {
+		t1 := List{t}
+		for tok == ',' {
+			t, tok, ok = Assignexpr(s, s.Scan())
+
+			if t.Type() != CompoundType || t.(Compound).Prio == 0 { // Error
+			}
+			if !ok {
+				return t1, tok, false
+			}
+			t1 = append(t1, t)
+		}
+		t = t1
+	} else {
+		t = List{t}
+	}
+	return
+}
+
+func printCHRStore(rs *RuleStore, h string) {
+	switch rs.Result {
+	case REmpty: // Trace: " No rule fired (!)"
+
+	case RFalse: // Trace: " false (!)"
+
+	case RTrue:  // Trace: " true (!)"
+
+	// default: Result == RStore
+	
+	for _, aChr := range rs.CHRstore {
+		for _, con := range aChr.varArg {
+			if !con.IsDeleted { // Trace " CHR-Store: [", con.String()
+		}
+		for _, con := range aChr.noArg { // Trace: " CHR-Store: [", con.String())
+		}
+	}
+
+	for _, aChr := range rs.BuiltInStore {
+		for _, con := range aChr.varArg {
+			if !con.IsDeleted { // Trace: " Built-In Store: [", con.String()
+			}
+		}
+		for _, con := range aChr.noArg {
+			if !con.IsDeleted { // Trace: " Built-In Store: [", con.String())
+			}
+		}
+	}
+
+}
+
+func WriteCHRStore(rs *RuleStore, out *os.File) {
+	switch rs.Result {
+	case REmpty: // Print: "No rule fired (!)"
+	case RFalse: // Print: "false"
+	case RTrue: // "true"
+    }
+	// default: Result == RStore
+	for _, aChr := range rs.CHRstore {
+		for _, con := range aChr.varArg {
+			if !con.IsDeleted { // Print: "[%s", con.String()
+			}
+		}
+		for _, con := range aChr.noArg {
+			if !con.IsDeleted { // Print: "[%s", con.String()
+			}
+		}
+	}
+
+	for _, aChr := range rs.BuiltInStore {
+		for _, con := range aChr.varArg {
+			if !con.IsDeleted { // Print: "[%s", con.String()
+			}
+		}
+		for _, con := range aChr.noArg {
+			if !con.IsDeleted { // Print  "[%s", con.String())
+			}
+		}
+	}
+}
+
+func chr2CList(rs *RuleStore) (l CList) {
+	l = CList{}
+	if rs.Result != RStore {
+		return
+	}
+	for _, aChr := range rs.CHRstore {
+		for _, con := range aChr.varArg {
+			if !con.IsDeleted {
+				l = append(l, con)
+			}
+		}
+		for _, con := range aChr.noArg {
+			if !con.IsDeleted {
+				l = append(l, con)
+			}
+		}
+	}
+	return
+}
+
+func bi2CList(rs *RuleStore) (l CList) {
+	l = CList{}
+	for _, aChr := range rs.BuiltInStore {
+		for _, con := range aChr.varArg {
+			if !con.IsDeleted {
+				l = append(l, con)
+			}
+		}
+		for _, con := range aChr.noArg {
+			if !con.IsDeleted {
+				l = append(l, con)
+			}
+		}
+	}
+	return
+}
+
+func chr2List(rs *RuleStore) (l List) {
+	l = List{}
+	if rs.Result != RStore {
+		return
+	}
+	for _, aChr := range rs.CHRstore {
+		for _, con := range aChr.varArg {
+			if !con.IsDeleted {
+				l = append(l, *con)
+			}
+		}
+		for _, con := range aChr.noArg {
+			if !con.IsDeleted {
+				l = append(l, *con)
+			}
+		}
+	}
+	return
+}
+
+func bi2List() (l List) {
+	switch Result {
+	case REmpty:
+		l = List{String("no rule fired")}
+	case RFalse:
+		l = List{Bool(false)}
+	case RTrue:
+		l = List{Bool(true)}
+	default:
+
+		l = List{}
+		for _, aChr := range BuiltInStore {
+			for _, con := range aChr.varArg {
+				if !con.IsDeleted {
+					l = append(l, *con)
+				}
+			}
+		}
+	}
+	return
+}
+
+func chr2string() (str string) {
+	first := true
+	for _, aChr := range CHRstore {
+		for _, con := range aChr.varArg {
+			if !con.IsDeleted { // str = str + ", " + con.String()
+			}
+		}
+		for _, con := range aChr.noArg {
+			if !con.IsDeleted { // str = str + ", " + con.String()
+			}
+		}
+	}
+	return
+}
+
+func bi2string() (str string) {
+	first := true
+	for _, aChr := range BuiltInStore {
+		for _, con := range aChr.varArg {
+			if !con.IsDeleted { // str = str + ", " + con.String()
+			}
+		}
+		for _, con := range aChr.noArg {
+			if !con.IsDeleted { // str = str + ", " + con.String()
+			}
+		}
+	}
+	return
+}

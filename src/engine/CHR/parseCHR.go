@@ -294,12 +294,14 @@ func parseEvalRules(rs *RuleStore, s *sc.Scanner) (ok bool) {
 			if rule != nil {
 				if newGoals {
 					InitStore(rs)
-					rule.eMap = &EnvMap{inBinding: rs.emptyBinding, outBindings: map[int]*EnvMap{}}
+					rule.eMap = &EnvMap{InBinding: rs.emptyBinding, OutBindings: map[int]*EnvMap{}}
 					rs.CHRruleStore = []*chrRule{rule}
+					addRuleToPred2rule(rs, rule)
 					newGoals = false
 				} else {
-					rule.eMap = &EnvMap{inBinding: rs.emptyBinding, outBindings: map[int]*EnvMap{}}
+					rule.eMap = &EnvMap{InBinding: rs.emptyBinding, OutBindings: map[int]*EnvMap{}}
 					rs.CHRruleStore = append(rs.CHRruleStore, rule)
+					addRuleToPred2rule(rs, rule)
 					rs.nextRuleId++
 				}
 			}
@@ -595,6 +597,7 @@ func parseGuardHead(rs *RuleStore, s *sc.Scanner, tok rune, name string, cKeepLi
 	return tok, &chrRule{name: name, id: rs.nextRuleId,
 		delHead:  cDelList,
 		keepHead: cKeepList,
+		keepEnv:  makeKeepEnv(cKeepList),
 		guard:    cGuardList,
 		body:     bodyList.(List)}, nil, true
 }
@@ -631,12 +634,18 @@ func addChrRule(rs *RuleStore, s *sc.Scanner, name string, keepList, delList, gu
 	//		return errors.New(fmt.Sprintf("BODY in rule %s must be a List, not:  %s\n", name, bodyList))
 	//	}
 
-	rs.CHRruleStore = append(rs.CHRruleStore, &chrRule{name: name, id: rs.nextRuleId,
+	r := &chrRule{name: name, id: rs.nextRuleId,
 		delHead:  cDelList,
 		keepHead: cKeepList,
+		keepEnv:  makeKeepEnv(cKeepList),
 		guard:    cGuardList,
 		body:     bodyList.(List),
-		eMap:     &EnvMap{inBinding: rs.emptyBinding, outBindings: map[int]*EnvMap{}}})
+		eMap:     &EnvMap{InBinding: rs.emptyBinding, OutBindings: map[int]*EnvMap{}},
+		isOn:     false,
+		wasOn:    true}
+	rs.CHRruleStore = append(rs.CHRruleStore, r)
+	TraceHeadln(3, 3, " OFF rule: ", name, " (Add CHR-Rule) ")
+	addRuleToPred2rule(rs, r)
 	rs.nextRuleId++
 	return true
 }
@@ -972,7 +981,7 @@ func printCHRStore(rs *RuleStore, h string) {
 	first := true
 	for _, aChr := range rs.CHRstore {
 		for _, con := range aChr.varArg {
-			if !con.IsDeleted {
+			if con != nil && !con.IsDeleted {
 				if first {
 					TraceHead(1, 0, h, " CHR-Store: [", con.String())
 					first = false
@@ -982,7 +991,7 @@ func printCHRStore(rs *RuleStore, h string) {
 			}
 		}
 		for _, con := range aChr.noArg {
-			if !con.IsDeleted {
+			if con != nil && !con.IsDeleted {
 				if first {
 					TraceHead(1, 0, h, " CHR-Store: [", con.String())
 					first = false
@@ -1001,7 +1010,7 @@ func printCHRStore(rs *RuleStore, h string) {
 	first = true
 	for _, aChr := range rs.BuiltInStore {
 		for _, con := range aChr.varArg {
-			if !con.IsDeleted {
+			if con != nil && !con.IsDeleted {
 				if first {
 					TraceHead(1, 0, h, " Built-In Store: [", con.String())
 					first = false
@@ -1011,7 +1020,7 @@ func printCHRStore(rs *RuleStore, h string) {
 			}
 		}
 		for _, con := range aChr.noArg {
-			if !con.IsDeleted {
+			if con != nil && !con.IsDeleted {
 				if first {
 					TraceHead(1, 0, h, " Built-In Store: [", con.String())
 					first = false
@@ -1047,7 +1056,7 @@ func WriteCHRStore(rs *RuleStore, out *os.File) {
 	first := true
 	for _, aChr := range rs.CHRstore {
 		for _, con := range aChr.varArg {
-			if !con.IsDeleted {
+			if con != nil && !con.IsDeleted {
 				if first {
 					fmt.Fprintf(out, "[%s", con.String())
 					first = false
@@ -1057,7 +1066,7 @@ func WriteCHRStore(rs *RuleStore, out *os.File) {
 			}
 		}
 		for _, con := range aChr.noArg {
-			if !con.IsDeleted {
+			if con != nil && !con.IsDeleted {
 				if first {
 					fmt.Fprintf(out, "[%s", con.String())
 					first = false
@@ -1077,7 +1086,7 @@ func WriteCHRStore(rs *RuleStore, out *os.File) {
 	first = true
 	for _, aChr := range rs.BuiltInStore {
 		for _, con := range aChr.varArg {
-			if !con.IsDeleted {
+			if con != nil && !con.IsDeleted {
 				if first {
 					fmt.Fprintf(out, "[%s", con.String())
 					first = false
@@ -1087,7 +1096,7 @@ func WriteCHRStore(rs *RuleStore, out *os.File) {
 			}
 		}
 		for _, con := range aChr.noArg {
-			if !con.IsDeleted {
+			if con != nil && !con.IsDeleted {
 				if first {
 					fmt.Fprintf(out, "[%s", con.String())
 					first = false
@@ -1112,12 +1121,12 @@ func chr2CList(rs *RuleStore) (l CList) {
 	}
 	for _, aChr := range rs.CHRstore {
 		for _, con := range aChr.varArg {
-			if !con.IsDeleted {
+			if con != nil && !con.IsDeleted {
 				l = append(l, con)
 			}
 		}
 		for _, con := range aChr.noArg {
-			if !con.IsDeleted {
+			if con != nil && !con.IsDeleted {
 				l = append(l, con)
 			}
 		}
@@ -1129,12 +1138,12 @@ func bi2CList(rs *RuleStore) (l CList) {
 	l = CList{}
 	for _, aChr := range rs.BuiltInStore {
 		for _, con := range aChr.varArg {
-			if !con.IsDeleted {
+			if con != nil && !con.IsDeleted {
 				l = append(l, con)
 			}
 		}
 		for _, con := range aChr.noArg {
-			if !con.IsDeleted {
+			if con != nil && !con.IsDeleted {
 				l = append(l, con)
 			}
 		}
@@ -1149,12 +1158,12 @@ func chr2List(rs *RuleStore) (l List) {
 	}
 	for _, aChr := range rs.CHRstore {
 		for _, con := range aChr.varArg {
-			if !con.IsDeleted {
+			if con != nil && !con.IsDeleted {
 				l = append(l, *con)
 			}
 		}
 		for _, con := range aChr.noArg {
-			if !con.IsDeleted {
+			if con != nil && !con.IsDeleted {
 				l = append(l, *con)
 			}
 		}
@@ -1175,7 +1184,7 @@ func bi2List(rs *RuleStore) (l List) {
 		l = List{}
 		for _, aChr := range rs.BuiltInStore {
 			for _, con := range aChr.varArg {
-				if !con.IsDeleted {
+				if con != nil && !con.IsDeleted {
 					l = append(l, *con)
 				}
 			}
@@ -1188,7 +1197,7 @@ func chr2string(rs *RuleStore) (str string) {
 	first := true
 	for _, aChr := range rs.CHRstore {
 		for _, con := range aChr.varArg {
-			if !con.IsDeleted {
+			if con != nil && !con.IsDeleted {
 				if first {
 					str = "[" + con.String()
 					first = false
@@ -1198,7 +1207,7 @@ func chr2string(rs *RuleStore) (str string) {
 			}
 		}
 		for _, con := range aChr.noArg {
-			if !con.IsDeleted {
+			if con != nil && !con.IsDeleted {
 				if first {
 					str = "[" + con.String()
 					first = false
@@ -1220,7 +1229,7 @@ func bi2string(rs *RuleStore) (str string) {
 	first := true
 	for _, aChr := range rs.BuiltInStore {
 		for _, con := range aChr.varArg {
-			if !con.IsDeleted {
+			if con != nil && !con.IsDeleted {
 				if first {
 					str = "[" + con.String()
 					first = false
@@ -1230,7 +1239,7 @@ func bi2string(rs *RuleStore) (str string) {
 			}
 		}
 		for _, con := range aChr.noArg {
-			if !con.IsDeleted {
+			if con != nil && !con.IsDeleted {
 				if first {
 					str = "[" + con.String()
 					first = false
