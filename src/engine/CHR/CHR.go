@@ -879,15 +879,15 @@ func pRuleFired(rs *RuleStore, rule *chrRule) (ok bool) {
 		req := rule.keepReq // Request
 		// fmt.Printf("->>[> %s <] Rule %s stored req\n", keepReq2str(req), rule.name)
 		if req != R_next {
-			CHRtrace = 4
+
 			ok, req = handleLastFail(rs, rule, []*big.Int{}, keepList, 0, len_keepHead, rule.eMap, nil)
-			CHRtrace = 0
+
 			// fmt.Printf("<<-[> %v, %s <] << [> lastFail <], Rule %s \n", ok, keepReq2str(req), rule.name)
 		}
 		for req == R_next {
-			CHRtrace = 4
+
 			ok, req = matchKeepHead(rs, rule, []*big.Int{}, keepList, 0, len_keepHead, rule.eMap, nil, C_last)
-			CHRtrace = 0
+
 			// fmt.Printf("<<-[> %v, %s <] << [> next <] Rule %s  \n", ok, keepReq2str(req), rule.name)
 			if ok {
 				rule.keepReq = req
@@ -976,14 +976,14 @@ func matchKeepDelHead(isKeep bool, rs *RuleStore, r *chrRule, headList CList, it
 	len_chr := len(chrList)
 
 	// trace
-	CHRtrace = 3
+
 	if isKeep {
 		TraceHeadln(3, 3, "-----")
 		TraceHead(3, 3, "match Keep-Head >", head, "< with [")
 	} else {
 		TraceHead(3, 3, "match Del-Head >", head, "< with [")
 	}
-	CHRtrace = 0
+
 	// end trace
 
 	if len_chr == 0 {
@@ -1010,7 +1010,7 @@ func matchKeepDelHead(isKeep bool, rs *RuleStore, r *chrRule, headList CList, it
 	}
 
 	// begin trace
-	CHRtrace = 3
+
 	first := true
 	for _, c := range chrList {
 		if c != nil && !c.IsDeleted {
@@ -1023,7 +1023,7 @@ func matchKeepDelHead(isKeep bool, rs *RuleStore, r *chrRule, headList CList, it
 		}
 	}
 	Traceln(3, "]")
-	CHRtrace = 0
+
 	// end trace
 	// end trace
 
