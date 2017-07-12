@@ -224,7 +224,7 @@ func addRuleToPred2rule(rs *RuleStore, r *chrRule) {
 
 }
 
-func (rs *RuleStore) Infer(goals []string) (bool, []string, error) {
+func (rs *RuleStore) Infer(goals []string, max int) (bool, []string, error) {
 	cGoals, err := parseGoals(goals)
 	if err == nil {
 		// fmt.Printf("** parseGoals OK\n")
@@ -232,7 +232,7 @@ func (rs *RuleStore) Infer(goals []string) (bool, []string, error) {
 		for _, g := range cGoals {
 			addRefConstraintToStore(rs, g)
 		}
-		CHRsolver(rs)
+		CHRsolver(rs, max)
 
 		switch rs.Result {
 		case REmpty:
@@ -580,7 +580,7 @@ var CurVarCounter *big.Int
 // Try all rules in 'CHRruleStore' with CHR-goals in CHR-store
 // until no rule fired.
 // CHRsolver used the trace- or no-trace function
-func CHRsolver(rs *RuleStore) {
+func CHRsolver(rs *RuleStore, max int) {
 
 	if CHRtrace != 0 {
 		printCHRStore(rs, "New goal:")
@@ -588,7 +588,7 @@ func CHRsolver(rs *RuleStore) {
 	i := 0
 	ruleFound := true
 	if CHRtrace == 0 {
-		for ruleFound, i = true, 0; ruleFound && rs.Result != RFalse && i < 100000; i++ {
+		for ruleFound, i = true, 0; ruleFound && rs.Result != RFalse && (max == 0 || i < max); i++ {
 			// for ruleFound := true; ruleFound; {
 			ruleFound = false
 			for _, rule := range rs.CHRruleStore {
@@ -605,7 +605,7 @@ func CHRsolver(rs *RuleStore) {
 			}
 		}
 	} else { // CHRtrace != 0
-		for ruleFound, i = true, 0; ruleFound && rs.Result != RFalse && i < 100000; i++ {
+		for ruleFound, i = true, 0; ruleFound && rs.Result != RFalse && (max == 0 || i < max); i++ {
 			// for ruleFound := true; ruleFound; {
 			ruleFound = false
 			for _, rule := range rs.CHRruleStore {
@@ -638,7 +638,7 @@ func CHRsolver(rs *RuleStore) {
 		}
 	}
 
-	if i == 100000 {
+	if i == max {
 		TraceHeadln(0, 1, "!!! Time-out !!!")
 	}
 

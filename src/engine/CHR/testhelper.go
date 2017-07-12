@@ -194,7 +194,7 @@ func tNewQuery(rs *RuleStore, t *testing.T, goals string) bool {
 			printCHRStore(rs, "New goal:")
 			CHRtrace = 0
 		}
-		CHRsolver(rs)
+		CHRsolver(rs, 100000)
 		return true
 	}
 	return false

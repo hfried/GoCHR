@@ -316,7 +316,7 @@ func parseEvalRules(rs *RuleStore, s *sc.Scanner) (ok bool) {
 					addRefConstraintToStore(rs, g)
 				}
 
-				CHRsolver(rs)
+				CHRsolver(rs, 100000)
 
 				if CHRtrace == 0 {
 					printCHRStore(rs, "Result: ")
