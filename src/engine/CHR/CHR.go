@@ -223,7 +223,7 @@ func addRuleToPred2rule(rs *RuleStore, r *chrRule) {
 
 }
 
-func (rs *RuleStore) Infer(goals []string) (bool, []string, error) {
+func (rs *RuleStore) Infer(goals []string, max int) (bool, []string, error) {
 	cGoals, err := parseGoals(goals)
 	if err == nil {
 		// fmt.Printf("** parseGoals OK\n")
@@ -231,7 +231,7 @@ func (rs *RuleStore) Infer(goals []string) (bool, []string, error) {
 		for _, g := range cGoals {
 			addRefConstraintToStore(rs, g)
 		}
-		CHRsolver(rs)
+		CHRsolver(rs, max)
 
 		switch rs.Result {
 		case REmpty:
@@ -579,7 +579,7 @@ var CurVarCounter *big.Int
 // Try all rules in 'CHRruleStore' with CHR-goals in CHR-store
 // until no rule fired.
 // CHRsolver used the trace- or no-trace function
-func CHRsolver(rs *RuleStore) {
+func CHRsolver(rs *RuleStore, max int) {
 
 	if CHRtrace != 0 {
 		printCHRStore(rs, "New goal:")
@@ -587,7 +587,7 @@ func CHRsolver(rs *RuleStore) {
 	i := 0
 	ruleFound := true
 	if CHRtrace == 0 {
-		for ruleFound, i = true, 0; ruleFound && rs.Result != RFalse && i < 100000; i++ {
+		for ruleFound, i = true, 0; ruleFound && rs.Result != RFalse && (max == 0 || i < max); i++ {
 			// for ruleFound := true; ruleFound; {
 			ruleFound = false
 			for _, rule := range rs.CHRruleStore {
@@ -604,7 +604,7 @@ func CHRsolver(rs *RuleStore) {
 			}
 		}
 	} else { // CHRtrace != 0
-		for ruleFound, i = true, 0; ruleFound && rs.Result != RFalse && i < 100000; i++ {
+		for ruleFound, i = true, 0; ruleFound && rs.Result != RFalse && (max == 0 || i < max); i++ {
 			// for ruleFound := true; ruleFound; {
 			ruleFound = false
 			for _, rule := range rs.CHRruleStore {
@@ -637,7 +637,7 @@ func CHRsolver(rs *RuleStore) {
 		}
 	}
 
-	if i == 100000 {
+	if i == max {
 		TraceHeadln(0, 1, "!!! Time-out !!!")
 	}
 
@@ -878,15 +878,15 @@ func pRuleFired(rs *RuleStore, rule *chrRule) (ok bool) {
 		req := rule.keepReq // Request
 		// fmt.Printf("->>[> %s <] Rule %s stored req\n", keepReq2str(req), rule.name)
 		if req != R_next {
-			CHRtrace = 4
+
 			ok, req = handleLastFail(rs, rule, []*big.Int{}, keepList, 0, len_keepHead, rule.eMap, nil)
-			CHRtrace = 0
+
 			// fmt.Printf("<<-[> %v, %s <] << [> lastFail <], Rule %s \n", ok, keepReq2str(req), rule.name)
 		}
 		for req == R_next {
-			CHRtrace = 4
+
 			ok, req = matchKeepHead(rs, rule, []*big.Int{}, keepList, 0, len_keepHead, rule.eMap, nil, C_last)
-			CHRtrace = 0
+
 			// fmt.Printf("<<-[> %v, %s <] << [> next <] Rule %s  \n", ok, keepReq2str(req), rule.name)
 			if ok {
 				rule.keepReq = req
@@ -975,14 +975,14 @@ func matchKeepDelHead(isKeep bool, rs *RuleStore, r *chrRule, headList CList, it
 	len_chr := len(chrList)
 
 	// trace
-	CHRtrace = 3
+
 	if isKeep {
 		TraceHeadln(3, 3, "-----")
 		TraceHead(3, 3, "match Keep-Head >", head, "< with [")
 	} else {
 		TraceHead(3, 3, "match Del-Head >", head, "< with [")
 	}
-	CHRtrace = 0
+
 	// end trace
 
 	if len_chr == 0 {
@@ -1009,7 +1009,7 @@ func matchKeepDelHead(isKeep bool, rs *RuleStore, r *chrRule, headList CList, it
 	}
 
 	// begin trace
-	CHRtrace = 3
+
 	first := true
 	for _, c := range chrList {
 		if c != nil && !c.IsDeleted {
@@ -1022,7 +1022,7 @@ func matchKeepDelHead(isKeep bool, rs *RuleStore, r *chrRule, headList CList, it
 		}
 	}
 	Traceln(3, "]")
-	CHRtrace = 0
+
 	// end trace
 	// end trace
 

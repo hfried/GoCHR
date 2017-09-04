@@ -1,2 +1,2 @@
 # GoCHR
-Constraint Handling Rules Interpreter in GO (not ready)
+Constraint Handling Rules interpreter in Go.
