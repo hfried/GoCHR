@@ -7,7 +7,7 @@
 package chr
 
 import (
-	//	"fmt"
+	"fmt"
 	"strings"
 	"testing"
 	sc "text/scanner"
@@ -16,7 +16,6 @@ import (
 	. "github.com/hfried/GoCHR/src/engine/terms"
 )
 
-/*
 func TestCHR01(t *testing.T) {
 	ok := tAtt(t, "p(a, b), p(b, a), p(a,a), p(b, b)", "p(A,a)", "p(a, b), p(b, a), p(a,a), p(b, b)")
 	if ok != true {
@@ -407,10 +406,8 @@ add(X,X,s(s(0))).
 		t.Error("TestCHRRule10 fails")
 	}
 }
----
-*/
 
-/*  --- OK
+//  --- OK
 func TestCHRRule11(t *testing.T) {
 	CHRtrace = 3
 	src := `
@@ -451,7 +448,7 @@ implies(farbe(rot), farbe(blau)), farbe(rot) .
 		t.Error("TestCHRRule11 fails")
 	}
 }
-*/
+
 func TestCHRRule13(t *testing.T) {
 	CHRtrace = 4
 	src := `
@@ -473,7 +470,6 @@ implies(farbe(rot), farbe(blau)), implies(farbe(blau),farbe(grün)), farbe(rot) 
 	}
 }
 
-/*
 func TestCHRRule14(t *testing.T) {
 	CHRtrace = 0
 	src := `
@@ -494,9 +490,7 @@ implies(rot(), blau()), rot() .
 		t.Error("TestCHRRule14 fails")
 	}
 }
-*/
 
-/*
 func TestCHRRule16(t *testing.T) {
 	CHRtrace = 0
 	src := `
@@ -537,8 +531,7 @@ implies(rot, blau), rot .
 		t.Error("TestCHRRule17 fails")
 	}
 }
-*/
-/*
+
 func TestCHRRule19(t *testing.T) {
 	CHRtrace = 0
 	src := `
@@ -559,8 +552,7 @@ implies(rot, blau), implies(blau,grün), rot, gelb .
 		t.Error("TestCHRRule19 fails")
 	}
 }
-*/
-/*
+
 func TestCHRRule12(t *testing.T) {
 	CHRtrace = 0
 	src := `
@@ -603,8 +595,6 @@ implies(rot(), blau()), rot() .
 	}
 }
 
-
-
 func TestCHRRule18(t *testing.T) {
 	CHRtrace = 0
 	src := `
@@ -624,7 +614,6 @@ implies(rot, blau), rot .
 		t.Error("TestCHRRule18 fails")
 	}
 }
-
 
 func TestRS01(t *testing.T) {
 	rs := MakeRuleStore()
@@ -651,7 +640,7 @@ func TestRS01(t *testing.T) {
 	CHRtrace = 0
 	//	sum([1,2,3,4,5,6,7,8,9,10], S).
 	//	#result: S == 55 .
-	rBool, rList, err := rs.Infer([]string{"sum([1,2,3,4,5,6,7,8,9,10], S)"})
+	rBool, rList, err := rs.Infer([]string{"sum([1,2,3,4,5,6,7,8,9,10], S)"}, 100000)
 	CHRtrace = 0
 	if err != nil {
 		fmt.Printf("Infer fail \n")
@@ -766,8 +755,7 @@ dataUseStatement(dus(capability,identified_data,provider_data_authentication,cap
 		t.Error("TestCHRRule21 fails")
 	}
 }
---
-*/
+
 /*
 func TestCHRRule21(t *testing.T) {
 	CHRtrace = 1

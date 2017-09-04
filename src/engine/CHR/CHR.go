@@ -2390,6 +2390,10 @@ func matchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CList, it
 		env = env1
 	}
 
+	keepIdx := r.keepEnv[it]
+	ie := keepIdx.curIdx
+	endIdx := keepIdx.endIdx
+
 	chrList := readProperKeepConstraintsFromCHR_Store(rs, head)
 	len_chr := len(chrList)
 	if len_chr == 0 {
@@ -2409,21 +2413,23 @@ func matchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CList, it
 			if len_chr == 0 {
 				return false, R_noNews
 			}
+			// if endIdx == 0 {
+			endIdx = len_chr
+			keepIdx.endIdx = len_chr
+			// }
 		} else {
 			return false, R_noNews
 		}
 	}
 
-	// begin check the next head
-
-	keepIdx := r.keepEnv[it]
-	ie := keepIdx.curIdx
-	endIdx := keepIdx.endIdx
 	if endIdx > len_chr {
 		fmt.Printf(" !!!!!!!! #a# %s.endidx[%d] = %d, lenChr= %d\n", r.name, it, endIdx, len_chr)
 	} /*else {
 		fmt.Printf("#a# %s.endidx[%d] = %d, lenChr= %d\n", r.name, it, endIdx, len_chr)
 	}*/
+
+	// begin check the next head
+
 	lastKeepHead := it+1 == nt
 
 	// fmt.Printf(" - Rule: %s, Head(%d): %s, call: %s, start: %d, cur: %d, end: %d chr: %d --- \n", r.name, it, head, keepCall2str(call), keepIdx.startIdx, ie, endIdx, len_chr)
@@ -2756,6 +2762,10 @@ func traceMatchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CLis
 		env = env1
 	}
 
+	keepIdx := r.keepEnv[it]
+	ie := keepIdx.curIdx
+	endIdx := keepIdx.endIdx
+
 	chrList := readProperKeepConstraintsFromCHR_Store(rs, head)
 	TraceHead(4, 3, "in Match keep-Head ", head, " with [")
 	len_chr := len(chrList)
@@ -2780,6 +2790,10 @@ func traceMatchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CLis
 				Traceln(3, "] - empty chr (Variable=) ", b)
 				return false, R_noNews
 			}
+			// if endIdx == 0 {
+			endIdx = len_chr
+			keepIdx.endIdx = len_chr
+			// }
 		} else {
 			Traceln(3, "] - empty chr")
 			return false, R_noNews
@@ -2799,9 +2813,6 @@ func traceMatchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CLis
 	// end trace
 	// begin check the next head
 
-	keepIdx := r.keepEnv[it]
-	ie := keepIdx.curIdx
-	endIdx := keepIdx.endIdx
 	lastKeepHead := it+1 == nt
 	TraceHeadln(4, 4, " last keep head = ", lastKeepHead)
 
