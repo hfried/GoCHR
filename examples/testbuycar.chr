@@ -1,0 +1,9 @@
+gov_stats_scheme @ gov_stats(C,S) ==> safety(C,S), argument(gov_stats_scheme,[C,S]).
+advertising_scheme @ advertising(C,S) ==> safety(C,S), argument(advertising_scheme,[C,S]).
+car_buying_scheme @ price(C,P), type(C,T), speed(C,S), safety(C,F) ==> buy(C), argument(car_buying_scheme,[C,P,S,F,T]).
+
+price(volvo,medium), price(porsche,high), advertising(volvo,high), safety(porsche,medium), speed(porsche,fast), type(porsche,sports), type(volvo,family),   gov_stats(volvo,medium), speed(volvo,medium).
+
+advertising(volvo,high), type(volvo,family), price(porsche,high), type(porsche,sports), price(volvo,medium), speed(porsche,fast), gov_stats(volvo,medium), speed(volvo,medium), safety(porsche,medium).
+   
+

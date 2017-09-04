@@ -11,7 +11,6 @@ package chr
 import (
 	"fmt"
 	"math/big"
-
 	//	. "github.com/hfried/GoCHR/src/engine/parser"
 	. "github.com/hfried/GoCHR/src/engine/terms"
 )
@@ -2290,7 +2289,7 @@ func handleLastFail(rs *RuleStore, r *chrRule, his []*big.Int, headList CList, i
 	var env Bindings
 
 	head := headList[it]
-	head2 := head
+	//	head2 := head
 
 	if env1 == nil {
 		env = envMap.InBinding
@@ -2303,20 +2302,26 @@ func handleLastFail(rs *RuleStore, r *chrRule, his []*big.Int, headList CList, i
 	if len_chr == 0 {
 		// variabel in head
 		if head.Functor == "" {
-			b, ok := GetBinding(head.Args[0].(Variable), env)
-			if !ok {
-				return false, R_noNews
+			if it+1 == nt {
+				return false, R_next
+			} else {
+				return handleLastFail(rs, r, nil, headList, it+1, nt, nil, env)
 			}
-			if b.Type() != CompoundType {
-				return false, R_noNews
-			}
-			bc := b.(Compound)
-			head2 = &bc
-			chrList = readProperKeepConstraintsFromCHR_Store(rs, head2)
-			len_chr = len(chrList)
-			if len_chr == 0 {
-				return false, R_noNews
-			}
+
+			//			b, ok := GetBinding(head.Args[0].(Variable), env)
+			//			if !ok {
+			//				return false, R_noNews
+			//			}
+			//			if b.Type() != CompoundType {
+			//				return false, R_noNews
+			//			}
+			//			bc := b.(Compound)
+			//			head2 = &bc
+			//			chrList = readProperKeepConstraintsFromCHR_Store(rs, head2)
+			//			len_chr = len(chrList)
+			//			if len_chr == 0 {
+			//				return false, R_noNews
+			//			}
 		} else {
 			return false, R_noNews
 		}
@@ -2326,7 +2331,11 @@ func handleLastFail(rs *RuleStore, r *chrRule, his []*big.Int, headList CList, i
 
 	keepIdx := r.keepEnv[it]
 	endIdx := keepIdx.endIdx
-	lastKeepHead := it+1 == nt
+	itpl1 := it + 1
+	for itpl1 < nt && headList[itpl1].Functor == "" {
+		itpl1++
+	}
+	lastKeepHead := itpl1 == nt
 
 	// fmt.Printf(" - Rule: %s, Head(%d): %s, call: %s, start: %d, cur: %d, end: %d chr: %d --- \n", r.name, it, head, keepCall2str(call), keepIdx.startIdx, ie, endIdx, len_chr)
 
@@ -2335,7 +2344,7 @@ func handleLastFail(rs *RuleStore, r *chrRule, his []*big.Int, headList CList, i
 	} else {
 		if env1 == nil {
 		}
-		ok, req = handleLastFail(rs, r, nil, headList, it+1, nt, nil, env)
+		ok, req = handleLastFail(rs, r, nil, headList, itpl1, nt, nil, env)
 	}
 	switch req {
 	case R_next:
@@ -2627,7 +2636,7 @@ func traceHandleLastFail(rs *RuleStore, r *chrRule, his []*big.Int, headList CLi
 	var env Bindings
 
 	head := headList[it]
-	head2 := head
+	//	head2 := head
 
 	if env1 == nil {
 		env = envMap.InBinding
@@ -2636,31 +2645,39 @@ func traceHandleLastFail(rs *RuleStore, r *chrRule, his []*big.Int, headList CLi
 	}
 
 	chrList := readProperKeepConstraintsFromCHR_Store(rs, head)
-	TraceHead(4, 3, "match keep-Head ", head, " with [")
+	TraceHead(4, 3, "(last fail) match keep-Head ", head, " with [")
 	len_chr := len(chrList)
 	if len_chr == 0 {
 		// variabel in head
 		if head.Functor == "" {
-			Trace(4, " {HeadVariable=", head.Args[0].(Variable), "}")
-			b, ok := GetBinding(head.Args[0].(Variable), env)
-			if !ok {
-				Traceln(3, "] - empty chr (Variable not bind)")
-				return false, R_noNews
+
+			Traceln(4, " {skip HeadVariable=", head.Args[0].(Variable), "}")
+			if it+1 == nt {
+				TraceHeadln(4, 3, "(last fail) return R_next ")
+				return false, R_next
+			} else {
+				return traceHandleLastFail(rs, r, nil, headList, it+1, nt, nil, env)
 			}
-			if b.Type() != CompoundType {
-				Traceln(3, "] - empty chr (Variable Binding!=CompoundType)", b)
-				return false, R_noNews
-			}
-			bc := b.(Compound)
-			head2 = &bc
-			chrList = readProperKeepConstraintsFromCHR_Store(rs, head2)
-			len_chr = len(chrList)
-			if len_chr == 0 {
-				Traceln(3, "] - empty chr (Variable=) ", b)
-				return false, R_noNews
-			}
+			//			b, ok := GetBinding(head.Args[0].(Variable), env)
+			//			if !ok {
+			//				Traceln(3, "] - empty chr (Variable not bind)")
+			//				return false, R_noNews
+			//			}
+			//			if b.Type() != CompoundType {
+			//				Traceln(3, "] - empty chr (Variable Binding!=CompoundType)", b)
+			//				return false, R_noNews
+			//			}
+			//			bc := b.(Compound)
+			//			head2 = &bc
+			//			chrList = readProperKeepConstraintsFromCHR_Store(rs, head2)
+			//			len_chr = len(chrList)
+			//			if len_chr == 0 {
+			//				Traceln(3, "] - empty chr (Variable=) ", b)
+			//				return false, R_noNews
+			//			}
 		} else {
 			Traceln(3, "] - empty chr")
+			TraceHeadln(4, 3, "(last fail) return R_noNews ")
 			return false, R_noNews
 		}
 	}
@@ -2680,7 +2697,11 @@ func traceHandleLastFail(rs *RuleStore, r *chrRule, his []*big.Int, headList CLi
 
 	keepIdx := r.keepEnv[it]
 	endIdx := keepIdx.endIdx
-	lastKeepHead := it+1 == nt
+	itpl1 := it + 1
+	for itpl1 < nt && headList[itpl1].Functor == "" {
+		itpl1++
+	}
+	lastKeepHead := itpl1 == nt
 	TraceHeadln(4, 4, " last keep head = ", lastKeepHead)
 
 	// fmt.Printf(" - Rule: %s, Head(%d): %s, call: %s, start: %d, cur: %d, end: %d chr: %d --- \n", r.name, it, head, keepCall2str(call), keepIdx.startIdx, ie, endIdx, len_chr)
@@ -2688,7 +2709,7 @@ func traceHandleLastFail(rs *RuleStore, r *chrRule, his []*big.Int, headList CLi
 	if lastKeepHead {
 		req = R_nextNew
 	} else {
-		ok, req = traceHandleLastFail(rs, r, nil, headList, it+1, nt, nil, env)
+		ok, req = traceHandleLastFail(rs, r, nil, headList, itpl1, nt, nil, env)
 	}
 	switch req {
 	case R_next:
@@ -2696,6 +2717,7 @@ func traceHandleLastFail(rs *RuleStore, r *chrRule, his []*big.Int, headList CLi
 		if endIdx == 0 {
 			keepIdx.endIdx = len_chr
 		}
+		TraceHeadln(4, 3, "(last fail) return R_next 2 ")
 		return false, R_next
 
 	case R_nextNew:
@@ -2703,14 +2725,16 @@ func traceHandleLastFail(rs *RuleStore, r *chrRule, his []*big.Int, headList CLi
 			// News
 			keepIdx.startIdx, keepIdx.curIdx = endIdx, endIdx
 			keepIdx.endIdx = len_chr
+			TraceHeadln(4, 3, "(last fail) return R_next3 ")
 			return false, R_next
 		} else {
 			// old U new
 			keepIdx.startIdx, keepIdx.curIdx = 0, 0
+			TraceHeadln(4, 3, "(last fail) return R_nextNew 2 ")
 			return false, R_nextNew
 		}
 	}
-
+	TraceHeadln(4, 3, "(last fail) return R_noNews 2 ")
 	return false, R_noNews
 }
 
@@ -2722,7 +2746,7 @@ func traceMatchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CLis
 	var env Bindings
 	var senv map[int]*EnvMap
 	var mark bool
-
+	TraceHeadln(4, 3, " call MatchKeepHead, env1=", env1, ", call=", keepCall2str(call))
 	head := headList[it]
 	head2 := head
 
@@ -2733,7 +2757,7 @@ func traceMatchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CLis
 	}
 
 	chrList := readProperKeepConstraintsFromCHR_Store(rs, head)
-	TraceHead(4, 3, "match keep-Head ", head, " with [")
+	TraceHead(4, 3, "in Match keep-Head ", head, " with [")
 	len_chr := len(chrList)
 	if len_chr == 0 {
 		// variabel in head

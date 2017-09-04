@@ -7,7 +7,7 @@
 package chr
 
 import (
-	"fmt"
+	//	"fmt"
 	"strings"
 	"testing"
 	sc "text/scanner"
@@ -124,7 +124,7 @@ func TestCHR12(t *testing.T) {
 //		t.Errorf("TestStore02 failed\n")
 //	}
 //}
-*/
+
 func TestCHRRule00(t *testing.T) {
 	CHRtrace = 0
 	rs := MakeRuleStore()
@@ -407,10 +407,12 @@ add(X,X,s(s(0))).
 		t.Error("TestCHRRule10 fails")
 	}
 }
+---
+*/
 
-/* not OK
+/*  --- OK
 func TestCHRRule11(t *testing.T) {
-	CHRtrace = 0
+	CHRtrace = 3
 	src := `
 modus_ponens @ implies(P,Q), P ==> Q.
 implies(farbe(rot), farbe(blau)), farbe(rot) .
@@ -450,31 +452,8 @@ implies(farbe(rot), farbe(blau)), farbe(rot) .
 	}
 }
 */
-
-func TestCHRRule12(t *testing.T) {
-	CHRtrace = 0
-	src := `
-modus_ponens @ implies(P,Q), P <=> Q.
-implies(farbe(rot), farbe(blau)), farbe(rot) .
-#result: farbe(blau) .
-`
-
-	var s sc.Scanner
-	// Initialize the scanner.
-	s.Init(strings.NewReader(src))
-
-	s.Error = Err
-	rs := MakeRuleStore()
-	ok := parseEvalRules(rs, &s)
-
-	if !ok {
-		t.Error("TestCHRRule12 fails")
-	}
-}
-
-/*
 func TestCHRRule13(t *testing.T) {
-	CHRtrace = 0
+	CHRtrace = 4
 	src := `
 modus_ponens @ implies(P,Q), P ==> Q.
 implies(farbe(rot), farbe(blau)), implies(farbe(blau),farbe(grün)), farbe(rot) .
@@ -494,6 +473,7 @@ implies(farbe(rot), farbe(blau)), implies(farbe(blau),farbe(grün)), farbe(rot) 
 	}
 }
 
+/*
 func TestCHRRule14(t *testing.T) {
 	CHRtrace = 0
 	src := `
@@ -515,27 +495,6 @@ implies(rot(), blau()), rot() .
 	}
 }
 */
-
-func TestCHRRule15(t *testing.T) {
-	CHRtrace = 0
-	src := `
-modus_ponens @ implies(P,Q), P <=> Q.
-implies(rot(), blau()), rot() .
-#result: blau() .
-`
-
-	var s sc.Scanner
-	// Initialize the scanner.
-	s.Init(strings.NewReader(src))
-
-	s.Error = Err
-	rs := MakeRuleStore()
-	ok := parseEvalRules(rs, &s)
-
-	if !ok {
-		t.Error("TestCHRRule15 fails")
-	}
-}
 
 /*
 func TestCHRRule16(t *testing.T) {
@@ -579,27 +538,6 @@ implies(rot, blau), rot .
 	}
 }
 */
-
-func TestCHRRule18(t *testing.T) {
-	CHRtrace = 0
-	src := `
-modus_ponens @ implies(P,Q), P <=> Q.
-implies(rot, blau), rot .
-#result: blau .
-`
-	var s sc.Scanner
-	// Initialize the scanner.
-	s.Init(strings.NewReader(src))
-
-	s.Error = Err
-	rs := MakeRuleStore()
-	ok := parseEvalRules(rs, &s)
-
-	if !ok {
-		t.Error("TestCHRRule18 fails")
-	}
-}
-
 /*
 func TestCHRRule19(t *testing.T) {
 	CHRtrace = 0
@@ -622,6 +560,72 @@ implies(rot, blau), implies(blau,grün), rot, gelb .
 	}
 }
 */
+/*
+func TestCHRRule12(t *testing.T) {
+	CHRtrace = 0
+	src := `
+modus_ponens @ implies(P,Q), P <=> Q.
+implies(farbe(rot), farbe(blau)), farbe(rot) .
+#result: farbe(blau) .
+`
+
+	var s sc.Scanner
+	// Initialize the scanner.
+	s.Init(strings.NewReader(src))
+
+	s.Error = Err
+	rs := MakeRuleStore()
+	ok := parseEvalRules(rs, &s)
+
+	if !ok {
+		t.Error("TestCHRRule12 fails")
+	}
+}
+
+func TestCHRRule15(t *testing.T) {
+	CHRtrace = 0
+	src := `
+modus_ponens @ implies(P,Q), P <=> Q.
+implies(rot(), blau()), rot() .
+#result: blau() .
+`
+
+	var s sc.Scanner
+	// Initialize the scanner.
+	s.Init(strings.NewReader(src))
+
+	s.Error = Err
+	rs := MakeRuleStore()
+	ok := parseEvalRules(rs, &s)
+
+	if !ok {
+		t.Error("TestCHRRule15 fails")
+	}
+}
+
+
+
+func TestCHRRule18(t *testing.T) {
+	CHRtrace = 0
+	src := `
+modus_ponens @ implies(P,Q), P <=> Q.
+implies(rot, blau), rot .
+#result: blau .
+`
+	var s sc.Scanner
+	// Initialize the scanner.
+	s.Init(strings.NewReader(src))
+
+	s.Error = Err
+	rs := MakeRuleStore()
+	ok := parseEvalRules(rs, &s)
+
+	if !ok {
+		t.Error("TestCHRRule18 fails")
+	}
+}
+
+
 func TestRS01(t *testing.T) {
 	rs := MakeRuleStore()
 	keep := []string{}
@@ -762,7 +766,8 @@ dataUseStatement(dus(capability,identified_data,provider_data_authentication,cap
 		t.Error("TestCHRRule21 fails")
 	}
 }
-
+--
+*/
 /*
 func TestCHRRule21(t *testing.T) {
 	CHRtrace = 1

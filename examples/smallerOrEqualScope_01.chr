@@ -1,0 +1,6 @@
+smallerOrEqualScope1 @ resultScope(S1,C), resultScope(S2,C) ==> smallerOrEqualScope(S1,S2)
+smallerOrEqualScope2 @ smallerOrEqualScope(S1,S2), smallerOrEqualScope(S2,S3) ==> resultSmallerOrEqualScope(S1,S3)
+resultScope(statement01,context), resultScope(statement02,context).
+
+
+
