@@ -9,7 +9,7 @@
 package chr
 
 import (
-	"fmt"
+	// "fmt"
 	"math/big"
 	//	. "github.com/hfried/GoCHR/src/engine/parser"
 	. "github.com/hfried/GoCHR/src/engine/terms"
@@ -866,7 +866,7 @@ func pRuleFired(rs *RuleStore, rule *chrRule) (ok bool) {
 	len_delHead := len(delList)
 
 	if rule.eMap == nil {
-		fmt.Printf(" ######### empty envMap in RULE !!!!!!!!!!!!!!!\n")
+		//### fmt.Printf(" ######### empty envMap in RULE !!!!!!!!!!!!!!!\n")
 		rule.eMap = &EnvMap{InBinding: rs.emptyBinding, OutBindings: map[int]*EnvMap{}}
 	}
 
@@ -916,7 +916,7 @@ func TraceRuleFired(rs *RuleStore, rule *chrRule) (ok bool) {
 	len_delHead := len(delList)
 
 	if rule.eMap == nil {
-		fmt.Printf(" ######### empty envMap in RULE !!!!!!!!!!!!!!!\n")
+		//### fmt.Printf(" ######### empty envMap in RULE !!!!!!!!!!!!!!!\n")
 		rule.eMap = &EnvMap{InBinding: rs.emptyBinding, OutBindings: map[int]*EnvMap{}}
 	}
 
@@ -2374,6 +2374,7 @@ func handleLastFail(rs *RuleStore, r *chrRule, his []*big.Int, headList CList, i
 
 // Try to match the keep-head 'it' from the 'headlist' ('nt'==len of 'headlist')
 // with the 'ienv'-te environmen 'env'
+// if call == C_last --> the keep-head[ti-1], keep-head[it-2], ... have checked all pssible constraints in the store and this is the last possibility
 // If matching for all keep-heads ok, call 'checkGuards'
 func matchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CList, it int, nt int, envMap *EnvMap, env1 Bindings, call KeepCall) (ok bool, req KeepReq) {
 	var env2 Bindings
@@ -2422,11 +2423,11 @@ func matchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CList, it
 		}
 	}
 
-	if endIdx > len_chr {
-		fmt.Printf(" !!!!!!!! #a# %s.endidx[%d] = %d, lenChr= %d\n", r.name, it, endIdx, len_chr)
-	} /*else {
-		fmt.Printf("#a# %s.endidx[%d] = %d, lenChr= %d\n", r.name, it, endIdx, len_chr)
-	}*/
+	//###	if endIdx > len_chr {
+	//		fmt.Printf(" !!!!!!!! #a# %s.endidx[%d] = %d, lenChr= %d\n", r.name, it, endIdx, len_chr)
+	//	} /*else {
+	//		fmt.Printf("#a# %s.endidx[%d] = %d, lenChr= %d\n", r.name, it, endIdx, len_chr)
+	//	}*/
 
 	// begin check the next head
 
@@ -2746,6 +2747,7 @@ func traceHandleLastFail(rs *RuleStore, r *chrRule, his []*big.Int, headList CLi
 
 // Try to match and trace the keep-head 'it' from the 'headlist' ('nt'==len of 'headlist')
 // with the 'ienv'-te environmen 'env'
+// if call == C_last --> the keep-head[ti-1], keep-head[it-2], ... have checked all pssible constraints in the store and this is the last possibility
 // If matching for all keep-heads ok, call 'checkGuards'
 func traceMatchKeepHead(rs *RuleStore, r *chrRule, his []*big.Int, headList CList, it int, nt int, envMap *EnvMap, env1 Bindings, call KeepCall) (ok bool, req KeepReq) {
 	var env2 Bindings
