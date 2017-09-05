@@ -449,6 +449,38 @@ implies(farbe(rot), farbe(blau)), farbe(rot) .
 	}
 }
 
+func TestRSChrRule11(t *testing.T) {
+	rs := MakeRuleStore()
+
+	//	modus_ponens @ implies(P,Q), P ==> Q.
+
+	keep := []string{"implies(P,Q)", "P"}
+	del := []string{}
+	guard := []string{}
+	body := []string{"Q"}
+	err := rs.AddRule("modus_ponens", keep, del, guard, body)
+	if err != nil {
+		fmt.Printf("Add Rule modus_ponens fail \n")
+		fmt.Print(err.Error())
+		t.Error(err.Error())
+	}
+
+	CHRtrace = 0
+
+	//  implies(farbe(rot), farbe(blau)), farbe(rot) .
+	//  #result: implies(farbe(rot), farbe(blau)), farbe(rot), farbe(blau) .
+
+	rBool, rList, err := rs.Infer([]string{"implies(farbe(rot), farbe(blau))", "farbe(rot)"}, 100000)
+	CHRtrace = 0
+	if err != nil {
+		fmt.Printf("Infer fail \n")
+		fmt.Print(err.Error())
+		t.Error(err.Error())
+	}
+	fmt.Printf("\nresult: %v = %v \n", rBool, rList)
+	checkResult(rs, t, "implies(farbe(rot), farbe(blau)), farbe(rot), farbe(blau)", "")
+}
+
 func TestCHRRule13(t *testing.T) {
 	CHRtrace = 4
 	src := `

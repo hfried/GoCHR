@@ -866,7 +866,11 @@ func parseConstraints1(ty parseType, s *sc.Scanner, tok1 rune) (t Term, tok rune
 	switch ty {
 	case ParseHead:
 		if t.Type() != CompoundType || t.(Compound).Prio != 0 {
-			s.Error(s, fmt.Sprintf(" Not a CHR-predicate: %s ", t))
+			if t.Type() == VariableType {
+				t = Compound{Functor: "", Args: []Term{t}}
+			} else {
+				s.Error(s, fmt.Sprintf(" Not a CHR-predicate: %s ", t))
+			}
 		}
 	case ParseBI:
 		if t.Type() != CompoundType || t.(Compound).Prio == 0 {
@@ -894,7 +898,11 @@ func parseConstraints1(ty parseType, s *sc.Scanner, tok1 rune) (t Term, tok rune
 			switch ty {
 			case ParseHead:
 				if t.Type() != CompoundType || t.(Compound).Prio != 0 {
-					s.Error(s, fmt.Sprintf(" Not a CHR-predicate: %s ", t))
+					if t.Type() == VariableType {
+						t = Compound{Functor: "", Args: []Term{t}}
+					} else {
+						s.Error(s, fmt.Sprintf(" Not a CHR-predicate: %s ", t))
+					}
 				}
 			case ParseBI:
 				if t.Type() != CompoundType || t.(Compound).Prio == 0 {
