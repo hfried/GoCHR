@@ -76,10 +76,10 @@ CHR-Rules:
 
 In Go: 
     rs := MakeRuleStore() 
-	keep := []string{} 
-	del := []string{"sum([], S)"} 
-	guard := []string{} 
-	body := []string{"S == 0"} 
+    keep := []string{} 
+    del := []string{"sum([], S)"} 
+    guard := []string{} 
+    body := []string{"S == 0"} 
 	err := rs.AddRule("Sum01", keep, del, guard, body) 
 	if err != nil { 
 		panic(err) 
