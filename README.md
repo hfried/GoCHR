@@ -61,8 +61,8 @@ Precedence  Operator
 
 The operator | will be used as list-operator, as in [a|B]
 
-# Example
-# -------
+# Example 1
+# ---------
  
 CHR-Rules:
     Sum01 @ sum([], S) <=> S == 0 . 
@@ -111,11 +111,11 @@ In Go:
 	}
 	fmt.Printf("\nresult: %v = %v \n", rBool, rList)
 
+# Example 2
+# ---------
 	
 	
 	prime01 @ prime(N) ==> N>2 | prime(N-1).
 	prime02 @ prime(A) | prime(B) <=> B > A, B mod A == 0 | true.
-	//prime(100).
-	// #result:  prime(97), prime(89), prime(83), prime(79), prime(73), prime(71), prime(67), prime(61), prime(59), prime(53), prime(47), prime(43), prime(41), prime(37), prime(31), prime(29), prime(23), prime(19), prime(17), prime(13), prime(11), prime(7), prime(5), prime(3), prime(2).
 	prime(20).
 	#result: prime(19), prime(17), prime(13), prime(11), prime(7), prime(5), prime(3), prime(2).
