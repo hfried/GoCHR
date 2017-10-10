@@ -64,7 +64,7 @@ The operator | will be used as list-operator, as in [a|B]
 # Example 1
 # ---------
  
-CHR-Rules:
+CHR-Rules: 
     Sum01 @ sum([], S) <=> S == 0 . 
     Sum02 @ sum([X|Xs], S) <=> sum(Xs, S2), S == X + S2.
     sum([1,2,3,4,5,6,7,8,9,10], S) // Goal 1
@@ -74,42 +74,42 @@ CHR-Rules:
     sum([1,X,3], 6). // Goal 3
     #result: X == 2 .
 
-In Go:
-    rs := MakeRuleStore()
-	keep := []string{}
-	del := []string{"sum([], S)"}
-	guard := []string{}
-	body := []string{"S == 0"}
-	err := rs.AddRule("Sum01", keep, del, guard, body)
-	if err != nil {
-		panic(err)
-	}
-	keep = []string{}
-	del = []string{"sum([X|Xs], S)"}
-	guard = []string{}
-	body = []string{"sum(Xs, S2)", "S == X + S2"}
-	err = rs.AddRule("Sum02", keep, del, guard, body)
-	if err != nil {
-		panic(err)
-	}
-	CHRtrace = 0 // trace off
-	rBool, rList, err := rs.Infer([]string{"sum([1,2,3,4,5,6,7,8,9,10], S)"}, 100000)
-	if err != nil {
+In Go: 
+    rs := MakeRuleStore() 
+	keep := []string{} 
+	del := []string{"sum([], S)"} 
+	guard := []string{} 
+	body := []string{"S == 0"} 
+	err := rs.AddRule("Sum01", keep, del, guard, body) 
+	if err != nil { 
 		panic(err) 
-	}
-	fmt.Printf("\nresult: %v = %v \n", rBool, rList)
+	} 
+	keep = []string{} 
+	del = []string{"sum([X|Xs], S)"} 
+	guard = []string{} 
+	body = []string{"sum(Xs, S2)", "S == X + S2"} 
+	err = rs.AddRule("Sum02", keep, del, guard, body) 
+	if err != nil { 
+		panic(err) 
+	} 
+	CHRtrace = 0 // trace off 
+	rBool, rList, err := rs.Infer([]string{"sum([1,2,3,4,5,6,7,8,9,10], S)"}, 100000) 
+	if err != nil { 
+		panic(err)  
+	} 
+	fmt.Printf("\nresult: %v = %v \n", rBool, rList) 
 
-	rBool, rList, err := rs.Infer([]string{"sum([X,2,3], 6)"}, 100000)
-	if err != nil {
-		panic(err) 
-	}
-	fmt.Printf("\nresult: %v = %v \n", rBool, rList)
+	rBool, rList, err := rs.Infer([]string{"sum([X,2,3], 6)"}, 100000) 
+	if err != nil { 
+		panic(err)  
+	} 
+	fmt.Printf("\nresult: %v = %v \n", rBool, rList) 
 
-	rBool, rList, err := rs.Infer([]string{"sum([1,X,3], 6)"}, 100000)
-	if err != nil {
-		panic(err) 
-	}
-	fmt.Printf("\nresult: %v = %v \n", rBool, rList)
+	rBool, rList, err := rs.Infer([]string{"sum([1,X,3], 6)"}, 100000) 
+	if err != nil { 
+		panic(err)  
+	} 
+	fmt.Printf("\nresult: %v = %v \n", rBool, rList) 
 
 # Example 2
 # ---------
