@@ -9,11 +9,13 @@
 package parser
 
 import (
+	"errors"
 	"fmt"
-	. "github.com/hfried/GoCHR/src/engine/terms"
 	"os"
 	"strings"
 	sc "text/scanner"
+
+	. "github.com/hfried/GoCHR/src/engine/terms"
 	// "go/scanner"
 	// "go/token"
 )
