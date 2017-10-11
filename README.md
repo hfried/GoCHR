@@ -11,10 +11,9 @@ https://en.wikipedia.org/wiki/Constraint_Handling_Rules
 
 
 # GoCHR Interface to integrate the GoCHR-interpreter
-# --------------------------------------------------
 
- 
-// Ceate a RuleStore
+~~~
+// Create a RuleStore
 //------------------
 
 func MakeRuleStore() *RuleStore
@@ -40,18 +39,20 @@ func (rs *RuleStore) Infer(goals []string, max int) (b bool, store []string, err
 // b == true && store == []string{} ==> result: TRUE // empty store
 // b == true && store == []string{term1, term2, term3, ...} ==> result: term1, term2, term3, ...
 // b == false && err != nil ==> Error: err
+~~~
 
 # List of the built-in constraints to use in guard and body
-# ---------------------------------------------------------
-Constants
----------
-true  (the constraint that always holds)
+
+## Constants   
+
+true  (the constraint that always holds)    
 false  (the constraint that never holds, and is used to signal failure)
 
-Operators
----------
-Following operators from the Go programming language (see: https://golang.org/ref/spec#Operators )
-Precedence  Operator
+## Operators
+
+The following operators are from the Go programming language (see: <https://golang.org/ref/spec#Operators>)
+
+Precedence  Operator    
     6         unary operators +, -, !, ^, ¬ 
     5         *, /, %, div, mod, &, &^, <<, >>
     4        +, -, ^, or 
@@ -62,9 +63,10 @@ Precedence  Operator
 The operator | will be used as list-operator, as in [a|B]
 
 # Example 1
-# ---------
  
-CHR-Rules: 
+## CHR-Rules
+
+~~~
     Sum01 @ sum([], S) <=> S == 0 . 
     Sum02 @ sum([X|Xs], S) <=> sum(Xs, S2), S == X + S2.
     sum([1,2,3,4,5,6,7,8,9,10], S) // Goal 1
@@ -73,8 +75,11 @@ CHR-Rules:
     #result: X == 1 .
     sum([1,X,3], 6). // Goal 3
     #result: X == 2 .
+~~~
 
-In Go: 
+# In Go
+
+~~~
     rs := MakeRuleStore() 
     keep := []string{} 
     del := []string{"sum([], S)"} 
@@ -110,12 +115,13 @@ In Go:
 		panic(err)  
 	} 
 	fmt.Printf("\nresult: %v = %v \n", rBool, rList) 
+~~~
 
 # Example 2
-# ---------
-	
-	
+
+~~~	
 	prime01 @ prime(N) ==> N>2 | prime(N-1).
 	prime02 @ prime(A) | prime(B) <=> B > A, B mod A == 0 | true.
 	prime(20).
 	#result: prime(19), prime(17), prime(13), prime(11), prime(7), prime(5), prime(3), prime(2).
+~~~
