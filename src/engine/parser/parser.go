@@ -9,7 +9,7 @@
 package parser
 
 import (
-	"errors"
+	// "errors"
 	"fmt"
 	"os"
 	"strings"
