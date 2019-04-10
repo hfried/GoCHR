@@ -1,3 +1,72 @@
 fib01@ upto(A) ==> fib(0,1), fib(1,1).
 fib02@ upto(Max), fib(N1,M1), fib(N2,M2) ==> Max > N2, N2 == N1+1 | fib(N2+1,M1+M2).
 upto(10).
+
+
+Variante 1: Mit Kommentaren und Betzeichner für die Regeln (GG_Art_2_.. @)
+===========================================================================
+
+// Jeder hat das Recht auf die freie Entfaltung seiner Persönlichkeit, 
+GG_Art_2_00 @ gg_artikel_2() ==> jeder_Recht_auf_freie_Entfaltung( AllBuerger ).
+
+// Logik: Wenn Jeder, dann hat auch jeder Einzelne das Recht auf die freie Entfaltung seiner Persönlichkeit,
+GG_Art_2_01 @ jeder_Recht_freie_Entfaltung( Einer | BuergerListe ) <==> jeder_Recht_freie_Entfaltung( BuergerListe ), recht_auf_freie_Entfaltung( Einer, true ).
+
+// soweit er nicht die Rechte anderer verletzt
+GG_Art_2_02 @ rechte_verletzt( Einer, Anderer ) ==> Einer != Anderer | recht_auf_freie_Entfaltung( Einer, false ).
+
+// soweit er nicht gegen die verfassungsmäßige Ordnung verstößt
+GG_Art_2_03 @ gegen_verfassungsmäßige_Ordnung_verstoesst( Einer ) ==> recht_auf_freie_Entfaltung( Einer, false ).
+
+// soweit er nicht gegen das Sittengesetz verstößt
+GG_Art_2_04 @ gegen_Sittengesetz_verstoesst( Einer ) ==> recht_auf_freie_Entfaltung( Einer, false ).
+
+// Logik: Wer gegen GG Art 2 Abs (1) verstößt, hat nicht das Recht auf die freie Entfaltung seiner Persönlichkeit
+GG_Art_2_05 @ recht_auf_freie_Entfaltung( Einer, true ), recht_auf_freie_Entfaltung( Einer, false ) <==> recht_auf_freie_Entfaltung( Einer, false ).
+
+
+
+Variante 2: Ohne Kommentare, mit Bezeichner für die Regeln
+===========================================================
+
+GG_Art_2_00 @ gg_artikel_2() ==> jeder_Recht_auf_freie_Entfaltung( AllBuerger ).
+GG_Art_2_01 @ jeder_Recht_freie_Entfaltung( Einer | BuergerListe ) <==> jeder_Recht_freie_Entfaltung( BuergerListe ), recht_auf_freie_Entfaltung( Einer, true ).
+GG_Art_2_02 @ rechte_verletzt( Einer, Anderer ) ==> Einer != Anderer | recht_auf_freie_Entfaltung( Einer, false ).
+GG_Art_2_03 @ gegen_verfassungsmäßige_Ordnung_verstoesst( Einer ) ==> recht_auf_freie_Entfaltung( Einer, false ).
+GG_Art_2_04 @ gegen_Sittengesetz_verstoesst( Einer ) ==> recht_auf_freie_Entfaltung( Einer, false ).
+GG_Art_2_05 @ recht_auf_freie_Entfaltung( Einer, true ), recht_auf_freie_Entfaltung( Einer, false ) <==> recht_auf_freie_Entfaltung( Einer, false ).
+
+
+
+Variante 3: Mit Kommentaren, ohne Bezeichner für die Regeln
+===========================================================
+
+// Jeder hat das Recht auf die freie Entfaltung seiner Persönlichkeit, 
+gg_artikel_2() ==> jeder_Recht_auf_freie_Entfaltung( AllBuerger ).
+
+// Logik: Wenn Jeder, dann hat auch jeder Einzelne das Recht auf die freie Entfaltung seiner Persönlichkeit,
+jeder_Recht_freie_Entfaltung( Einer | BuergerListe ) <==> jeder_Recht_freie_Entfaltung( BuergerListe ), recht_auf_freie_Entfaltung( Einer, true ).
+
+// soweit er nicht die Rechte anderer verletzt
+rechte_verletzt( Einer, Anderer ) ==> Einer != Anderer | recht_auf_freie_Entfaltung( Einer, false ).
+
+// soweit er nicht gegen die verfassungsmäßige Ordnung verstößt
+gegen_verfassungsmäßige_Ordnung_verstoesst( Einer ) ==> recht_auf_freie_Entfaltung( Einer, false ).
+
+// soweit er nicht gegen das Sittengesetz verstößt
+gegen_Sittengesetz_verstoesst( Einer ) ==> recht_auf_freie_Entfaltung( Einer, false ).
+
+// Logik: Wer gegen GG Art 2 Abs (1) verstößt, hat nicht das Recht auf die freie Entfaltung seiner Persönlichkeit
+recht_auf_freie_Entfaltung( Einer, true ), recht_auf_freie_Entfaltung( Einer, false ) <==> recht_auf_freie_Entfaltung( Einer, false ).
+
+
+
+Variante 4: Ohne Kommentare und ohne Bezeichner für die Regeln
+==============================================================
+
+GG_Art_2_00 @ gg_artikel_2() ==> jeder_Recht_auf_freie_Entfaltung( AllBuerger ).
+GG_Art_2_01 @ jeder_Recht_freie_Entfaltung( Einer | BuergerListe ) <==> jeder_Recht_freie_Entfaltung( BuergerListe ), recht_auf_freie_Entfaltung( Einer, true ).
+GG_Art_2_02 @ rechte_verletzt( Einer, Anderer ) ==> Einer != Anderer | recht_auf_freie_Entfaltung( Einer, false ).
+GG_Art_2_03 @ gegen_verfassungsmäßige_Ordnung_verstoesst( Einer ) ==> recht_auf_freie_Entfaltung( Einer, false ).
+GG_Art_2_04 @ gegen_Sittengesetz_verstoesst( Einer ) ==> recht_auf_freie_Entfaltung( Einer, false ).
+GG_Art_2_05 @ recht_auf_freie_Entfaltung( Einer, true ), recht_auf_freie_Entfaltung( Einer, false ) <==> recht_auf_freie_Entfaltung( Einer, false ).

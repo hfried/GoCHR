@@ -10,7 +10,6 @@ package terms
 
 import (
 	"fmt"
-
 	// "math/big"
 	// "strconv"
 	// "strings"

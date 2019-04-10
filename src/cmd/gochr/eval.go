@@ -7,6 +7,7 @@ import (
 	"os"
 
 	chr "github.com/hfried/GoCHR/src/engine/CHR"
+	trace "github.com/hfried/GoCHR/src/engine/terms"
 	// "github.com/hfried/GoCHR/src/engine/parser"
 )
 
@@ -71,10 +72,10 @@ func evalCmd() {
 	if !ok {
 		log.Fatal(fmt.Errorf("%s\n", err))
 	}
-	chr.CHRtrace = 0
-	chr.CHRsolver(rs)
+	trace.CHRtrace = 0
+	chr.CHRsolver(rs, 1000000)
 
-	chr.CHRtrace = 1
+	trace.CHRtrace = 1
 	chr.WriteCHRStore(rs, outFile)
 
 }

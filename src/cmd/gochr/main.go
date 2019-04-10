@@ -25,7 +25,7 @@ Execute "gochr help [command]" for further information.
 `
 const (
 	Name    = "GoCHR"
-	Version = "0.72"
+	Version = "2.00"
 )
 
 func main() {
