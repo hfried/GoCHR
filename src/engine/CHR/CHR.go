@@ -11,6 +11,7 @@ package chr
 import (
 	// "fmt"
 	"math/big"
+
 	//	. "github.com/hfried/GoCHR/src/engine/parser"
 	. "github.com/hfried/GoCHR/src/engine/terms"
 )
@@ -1046,10 +1047,25 @@ func matchKeepDelHead(isKeep bool, rs *RuleStore, r *chrRule, headList CList, it
 	// check in head stored environment map
 	ie := 0
 	len_ie := 0
+	// Fehler Umgehung
+	if envMap == nil {
+		envMap = &EnvMap{InBinding: nil, OutBindings: map[int]*EnvMap{}}
+	}
+	senv = envMap.OutBindings
+	// if senv == nil {
+	// 	fmt.Println(" +++++++++ senv == NIL ")
+	// 	senv = map[int]*EnvMap{}
+	// 	envMap.OutBindings = senv
+	// }
 
 	if env1 == nil {
 
-		senv = envMap.OutBindings
+		// senv = envMap.OutBindings
+		// if senv == nil {
+		// 	fmt.Println(" +++++++++ senv == NIL ")
+		// 	senv = map[int]*EnvMap{}
+		// 	envMap.OutBindings = senv
+		// }
 		// senv, ok := (*head.EMap)[ienv]
 		//	if ok {
 		len_ie = len(senv)
