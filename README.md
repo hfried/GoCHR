@@ -8,12 +8,15 @@ distributed with this software, it is also available online at
 
 // Syntax CHR-rules:
 
-[<rulename>] '@' <keep-heads> '==>' [<guards> '|'] <body> '.'
-[<rulename>] '@' <keep-heads> '/' <del-heads> '<=>' [<guards> '|'] <body>'.'
-[<rulename>] '@' <del-heads> '<=>' [<guards> '|'] <body>'.'
+[<rulename> '@'] <keep-heads> '==>' [<guards> '|'] <body> '.'
+[<rulename> '@'] <keep-heads> '\' <del-heads> '<=>' [<guards> '|'] <body>'.'
+[<rulename> '@'] <del-heads> '<=>' [<guards> '|'] <body>'.'
 
 // goals
 <predicates> '.'
+
+// test
+'#result:' <expected predicates> '.'
 
 // example:
 
