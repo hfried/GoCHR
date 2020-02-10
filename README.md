@@ -4,25 +4,25 @@ Constraint Handling Rule system, written in the Go programming language.
 This source code is subject to the terms of the Mozilla Public
 License, version 2.0 (MPL-2.0). If a copy of the MPL was not
 distributed with this software, it is also available online at
-<http://mozilla.org/MPL/2.0/>.  For futher information about the MPL see <http://www.mozilla.org/MPL/2.0/FAQ.html>.
+ &lt;http://mozilla.org/MPL/2.0/>.  For futher information about the MPL see  &lt;http://www.mozilla.org/MPL/2.0/FAQ.html>.
 
 // Syntax CHR-rules:
 
-[<rulename> '@'] <keep-heads> '==>' [<guards> '|'] <body> '.'
-[<rulename> '@'] <keep-heads> '\' <del-heads> '<=>' [<guards> '|'] <body>'.'
-[<rulename> '@'] <del-heads> '<=>' [<guards> '|'] <body>'.'
+[ &lt;rulename> '@']  &lt;keep-heads> '==>' [ &lt;guards> '|']  &lt;body> '.'
+[ &lt;rulename> '@']  &lt;keep-heads> '\'  &lt;del-heads> ' &lt;=>' [ &lt;guards> '|']  &lt;body>'.'
+[ &lt;rulename> '@']  &lt;del-heads> ' &lt;=>' [ &lt;guards> '|']  &lt;body>'.'
 
 // goals
-<predicates> '.'
+ &lt;predicates> '.'
 
 // test
-'#result:' <expected d  predicates> '.'
+'#result:'  &lt;expected d  predicates> '.'
 
 // example:
 
-gcd01@ gcd(0) <=> true .
+gcd01@ gcd(0)  &lt;=> true .
 // logarithmic complexity
-gcd02@ gcd(N) \ gcd(M) <=> N <= M, L := M mod N | gcd(L).
+gcd02@ gcd(N) \ gcd(M)  &lt;=> N  &lt;= M, L := M mod N | gcd(L).
 gcd(94017), gcd(1155), gcd(2035).
 
 More example see: GoCHR/example
@@ -84,14 +84,14 @@ false  (the constraint that never holds, and is used to signal failure)
 
 ## Operators
 
-The following operators are from the Go programming language (see: <https://golang.org/ref/spec#Operators>)
+The following operators are from the Go programming language (see:  &lt;https://golang.org/ref/spec#Operators>)
 
 Precedence | Operator    
 ---------- | --------
 6   |      unary operators +, -, !, ^, ¬ 
-5   |     *, /, %, div, mod, &, &^, <<, >>
+5   |     *, /, %, div, mod, &, &^,  &lt; &lt;, >>
 4   |    +, -, ^, or 
-3   |    ==, !=, <, <=, >, >= and =< (only for Prolog-like)
+3   |    ==, !=,  &lt;,  &lt;=, >, >= and = &lt; (only for Prolog-like)
 2   |     &&
 1   |    ||
 
@@ -102,8 +102,8 @@ The operator | will be used as list-operator, as in [a|B]
 ## CHR-Rules
 
 ```prolog
-    Sum01 @ sum([], S) <=> S == 0 . 
-    Sum02 @ sum([X|Xs], S) <=> sum(Xs, S2), S == X + S2.
+    Sum01 @ sum([], S)  &lt;=> S == 0 . 
+    Sum02 @ sum([X|Xs], S)  &lt;=> sum(Xs, S2), S == X + S2.
     sum([1,2,3,4,5,6,7,8,9,10], S) // Goal 1
     #result: S == 55 .
     sum([X,2,3], 6). // Goal 2
@@ -156,7 +156,7 @@ The operator | will be used as list-operator, as in [a|B]
 
 ```prolog	
 	prime01 @ prime(N) ==> N>2 | prime(N-1).
-	prime02 @ prime(A) | prime(B) <=> B > A, B mod A == 0 | true.
+	prime02 @ prime(A) | prime(B)  &lt;=> B > A, B mod A == 0 | true.
 	prime(20).
 	#result: prime(19), prime(17), prime(13), prime(11), prime(7), prime(5), prime(3), prime(2).
 ```
