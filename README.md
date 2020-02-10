@@ -6,23 +6,30 @@ License, version 2.0 (MPL-2.0). If a copy of the MPL was not
 distributed with this software, it is also available online at
  &lt;http://mozilla.org/MPL/2.0/>.  For futher information about the MPL see  &lt;http://www.mozilla.org/MPL/2.0/FAQ.html>.
 
-// Syntax CHR-rules:
+# Syntax CHR-rules
 
 [ &lt;rulename> '@']  &lt;keep-heads> '==>' [ &lt;guards> '|']  &lt;body> '.'
+
 [ &lt;rulename> '@']  &lt;keep-heads> '\'  &lt;del-heads> ' &lt;=>' [ &lt;guards> '|']  &lt;body>'.'
+
 [ &lt;rulename> '@']  &lt;del-heads> ' &lt;=>' [ &lt;guards> '|']  &lt;body>'.'
 
 // goals
+
  &lt;predicates> '.'
 
 // test
+
 '#result:'  &lt;expected d  predicates> '.'
 
 // example:
 
 gcd01@ gcd(0)  &lt;=> true .
+
 // logarithmic complexity
+
 gcd02@ gcd(N) \ gcd(M)  &lt;=> N  &lt;= M, L := M mod N | gcd(L).
+
 gcd(94017), gcd(1155), gcd(2035).
 
 More example see: GoCHR/example
@@ -32,7 +39,8 @@ https://en.wikipedia.org/wiki/Constraint_Handling_Rules
 # use GoCHR 
 
 usage: gochr eval   [-o output-file] [input-file]
-              gochr trace [-o output-file][input-file]
+
+       gochr trace [-o output-file][input-file]
 
 Evaluates/ Trace the evaluation of Constraint Handling Rules and prints the relult.
 
@@ -40,8 +48,6 @@ If no input-file is specified, input is read from stdin.
 
 The -o flag specifies the output file name. If the -o flag is not used,
 output goes to stdout.
-                  
- usage: gochr trage
 
 
 # GoCHR Interface to integrate the GoCHR-interpreter
