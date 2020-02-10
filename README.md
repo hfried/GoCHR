@@ -8,21 +8,21 @@ distributed with this software, it is also available online at
 
 # Syntax CHR-rules
 
-[ &lt;rulename> '@']  &lt;keep-heads> '==>' [ &lt;guards> '|']  &lt;body> '.'
+[ &lt;rulename> '**@**']  &lt;keep-heads> '**==>**' [ &lt;guards> '**|**']  &lt;body> '**.**'
 
-[ &lt;rulename> '@']  &lt;keep-heads> '\'  &lt;del-heads> ' &lt;=>' [ &lt;guards> '|']  &lt;body>'.'
+[ &lt;rulename> '**@**']  &lt;keep-heads> '**\**'  &lt;del-heads> '** &lt;=>**' [ &lt;guards> '**|**']  &lt;body>'**.**'
 
-[ &lt;rulename> '@']  &lt;del-heads> ' &lt;=>' [ &lt;guards> '|']  &lt;body>'.'
+[ &lt;rulename> '**@**']  &lt;del-heads> '** &lt;=>**' [ &lt;guards> '**|**']  &lt;body>'**.**'
 
 // goals
 
- &lt;predicates> '.'
+ &lt;predicates> '**.**'
 
 // test
 
-'#result:'  &lt;expected d  predicates> '.'
+'**#result:**'  &lt;expected d  predicates> '**.**'
 
-// example:
+# Example
 
 gcd01@ gcd(0)  &lt;=> true .
 
@@ -36,7 +36,7 @@ More example see: GoCHR/example
 
 For more information about Constraint Handling Rules see: 
 https://en.wikipedia.org/wiki/Constraint_Handling_Rules  
-# use GoCHR 
+# Use GoCHR 
 
 usage: gochr eval   [-o output-file] [input-file]
 
