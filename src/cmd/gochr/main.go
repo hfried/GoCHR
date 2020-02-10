@@ -9,6 +9,8 @@ package main
 import (
 	"fmt"
 	"os"
+
+	trace "github.com/hfried/GoCHR/src/engine/terms"
 )
 
 const help = `
@@ -19,6 +21,7 @@ Usage: gochr command [arguments]
 The commands are:
 
 eval - evaluate Constraint Handling Rules
+trace - evaluate and trace Constraint Handling Rules
 help - displays instructions
 
 Execute "gochr help [command]" for further information.
@@ -34,6 +37,10 @@ func main() {
 	} else {
 		switch os.Args[1] {
 		case "eval":
+			trace.CHRtrace = 0
+			evalCmd()
+		case "trace":
+			trace.CHRtrace = 1
 			evalCmd()
 		default:
 			if len(os.Args) == 2 {

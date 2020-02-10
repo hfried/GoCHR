@@ -72,7 +72,7 @@ func evalCmd() {
 	if !ok {
 		log.Fatal(fmt.Errorf("%s\n", err))
 	}
-	trace.CHRtrace = 0
+	// trace.CHRtrace = 0
 	chr.CHRsolver(rs, 1000000)
 
 	trace.CHRtrace = 1

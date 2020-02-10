@@ -617,13 +617,20 @@ func CHRsolver(rs *RuleStore, max int) {
 						" \\ ", rule.delHead.String(), " <=> ", rule.guard.String(), " | ", rule.body.String(), ".")
 
 					if TraceRuleFired(rs, rule) {
-						TraceHeadln(1, 1, "rule ", rule.name, " fired (id: ", rule.id, ")")
+						// TraceHeadln(1, 1, "rule ", rule.name, " fired (id: ", rule.id, ")")
+						if rule.name == "" {
+							TraceHeadln(1, 1, "rule (", rule.id, ") fired ", rule.keepHead.String(),
+								" \\ ", rule.delHead.String(), " <=> ", rule.guard.String(), " | ", rule.body.String(), ".")
+						} else {
+							TraceHeadln(1, 1, "rule ", rule.name, " fired ", rule.keepHead.String(),
+								" \\ ", rule.delHead.String(), " <=> ", rule.guard.String(), " | ", rule.body.String(), ".")
+						}
 						ruleFound = true
 						break
 					}
 					rule.isOn = false
-					TraceHeadln(1, 1, " OFF rule: ", rule.name, " (Rule not fired) ")
-					TraceHeadln(2, 1, "rule ", rule.name, " NOT fired (id: ", rule.id, ")")
+					TraceHeadln(2, 1, " OFF rule: ", rule.name, " (Rule not fired) ")
+					TraceHeadln(3, 1, "rule ", rule.name, " NOT fired (id: ", rule.id, ")")
 					rule.isOn = false
 					// fmt.Printf("     OFF rule %s (Rule not fired 2) \n", rule.name)
 					// TraceHeadln(1, 1, " OFF rule: ", rule.name, " (Rule not fired2) ")
@@ -1328,9 +1335,14 @@ func traceMatchKeepDelHead(isKeep bool, rs *RuleStore, r *chrRule, headList CLis
 	// check in head stored environment map
 	ie := 0
 	len_ie := 0
+	// leere Umgebung
+	if envMap == nil {
+		envMap = &EnvMap{InBinding: nil, OutBindings: map[int]*EnvMap{}}
+	}
+	senv = envMap.OutBindings
 
 	if env1 == nil {
-		senv = envMap.OutBindings
+		// senv = envMap.OutBindings
 		// senv, ok := (*head.EMap)[ienv]
 		//	if ok {
 		TraceHead(4, 4, "(1) Emap before head match")

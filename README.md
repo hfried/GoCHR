@@ -1,4 +1,4 @@
-These are the source files of Version 2.0 of the
+These are the source files of Version 2.1 of the
 Constraint Handling Rule system, written in the Go programming language.
 
 This source code is subject to the terms of the Mozilla Public
@@ -16,7 +16,7 @@ distributed with this software, it is also available online at
 <predicates> '.'
 
 // test
-'#result:' <expected predicates> '.'
+'#result:' <expected d  predicates> '.'
 
 // example:
 
@@ -31,14 +31,17 @@ For more information about Constraint Handling Rules see:
 https://en.wikipedia.org/wiki/Constraint_Handling_Rules  
 # use GoCHR 
 
-usage: gochr eval [-o output-file] [input-file]
+usage: gochr eval   [-o output-file] [input-file]
+              gochr trace [-o output-file][input-file]
 
-Evaluates Constraint Handling Rules and prints the relult.
+Evaluates/ Trace the evaluation of Constraint Handling Rules and prints the relult.
 
 If no input-file is specified, input is read from stdin.
 
 The -o flag specifies the output file name. If the -o flag is not used,
 output goes to stdout.
+                  
+ usage: gochr trage
 
 
 # GoCHR Interface to integrate the GoCHR-interpreter
