@@ -37,7 +37,7 @@ distributed with this software, it is also available online at
 
 ```	
 	prime01 @ prime(N) ==> N>2 | prime(N-1).
-	prime02 @ prime(A) | prime(B)  &lt;=> B > A, B mod A == 0 | true.
+	prime02 @ prime(A) | prime(B)  <=> B > A, B mod A == 0 | true.
 	prime(20).
 	#result: prime(19), prime(17), prime(13), prime(11), prime(7), prime(5), prime(3), prime(2).
 ```
