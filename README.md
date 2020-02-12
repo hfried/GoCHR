@@ -24,13 +24,14 @@ distributed with this software, it is also available online at
 
 # Example 1
 
-gcd01@ gcd(0)  &lt;=> true .
+```
+	gcd01@ gcd(0)  &lt;=> true .
+	// logarithmic complexity
+	gcd02@ gcd(N) \ gcd(M)  &lt;=> N  &lt;= M, L := M mod N | gcd(L).
 
-// logarithmic complexity
-
-gcd02@ gcd(N) \ gcd(M)  &lt;=> N  &lt;= M, L := M mod N | gcd(L).
-
-gcd(94017), gcd(1155), gcd(2035).
+	gcd(94017), gcd(1155), gcd(2035).
+	#result: gcd(11).
+```
 
 # Example 2
 
