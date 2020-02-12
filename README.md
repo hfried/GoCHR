@@ -25,7 +25,7 @@ distributed with this software, it is also available online at
 # Example 1
 
 ```
-	gcd01@ gcd(0)  &lt;=> true .
+	gcd01@ gcd(0)  <=> true .
 	// logarithmic complexity
 	gcd02@ gcd(N) \ gcd(M)  <=> N <= M, L := M mod N | gcd(L).
 
