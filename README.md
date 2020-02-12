@@ -10,7 +10,7 @@ distributed with this software, it is also available online at
 
 [ &lt;rulename> '**@**']  &lt;keep-heads> '**==>**' [ &lt;guards> '**|**']  &lt;body> '**.**'
 
-[ &lt;rulename> '**@**']  &lt;keep-heads> '**\**'  &lt;del-heads> '** &lt;=>**' [ &lt;guards> '**|**']  &lt;body>'**.**'
+[ &lt;rulename> '**@**']  &lt;keep-heads> '\'  &lt;del-heads> '**&lt;=>**' [ &lt;guards> '**|**']  &lt;body>'**.**'
 
 [ &lt;rulename> '**@**']  &lt;del-heads> '** &lt;=>**' [ &lt;guards> '**|**']  &lt;body>'**.**'
 
@@ -20,7 +20,7 @@ distributed with this software, it is also available online at
 
 // test
 
-'**#result:**'  &lt;expected d  predicates> '**.**'
+'**#result:**'  &lt;expected predicates> '**.**'
 
 # Example
 
@@ -42,7 +42,7 @@ usage: gochr eval   [-o output-file] [input-file]
 
        gochr trace [-o output-file][input-file]
 
-Evaluates/ Trace the evaluation of Constraint Handling Rules and prints the relult.
+Evaluates/ Trace the evaluation of Constraint Handling Rules and prints the result.
 
 If no input-file is specified, input is read from stdin.
 
@@ -97,9 +97,9 @@ Precedence | Operator
 6   |      unary operators +, -, !, ^, ¬ 
 5   |     *, /, %, div, mod, &, &^,  &lt; &lt;, >>
 4   |    +, -, ^, or 
-3   |    ==, !=,  &lt;,  &lt;=, >, >= and = &lt; (only for Prolog-like)
+3   |    ==, !=,  &lt;,  &lt;=, >, >= and =&lt; (only for Prolog-like)
 2   |     &&
-1   |    ||
+1   |    \|\|
 
 The operator | will be used as list-operator, as in [a|B]
 
