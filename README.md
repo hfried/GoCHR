@@ -8,11 +8,11 @@ distributed with this software, it is also available online at
 
 # Syntax CHR-rules
 
-[ &lt;rulename> '**@**']  &lt;keep-heads> '**==>**' [ &lt;guards> '**|**']  &lt;body> '**.**'
+[ &lt;rulename> '**@**']  &lt;keep-heads> '==>' [ &lt;guards> '**|**']  &lt;body> '**.**'
 
-[ &lt;rulename> '**@**']  &lt;keep-heads> '\'  &lt;del-heads> '**&lt;=>**' [ &lt;guards> '**|**']  &lt;body>'**.**'
+[ &lt;rulename> '**@**']  &lt;keep-heads> '\\'  &lt;del-heads> '&lt;=>' [ &lt;guards> '**|**']  &lt;body>'**.**'
 
-[ &lt;rulename> '**@**']  &lt;del-heads> '** &lt;=>**' [ &lt;guards> '**|**']  &lt;body>'**.**'
+[ &lt;rulename> '**@**']  &lt;del-heads> '&lt;=>' [ &lt;guards> '**|**']  &lt;body>'**.**'
 
 // goals
 
@@ -22,7 +22,7 @@ distributed with this software, it is also available online at
 
 '**#result:**'  &lt;expected predicates> '**.**'
 
-# Example
+# Example 1
 
 gcd01@ gcd(0)  &lt;=> true .
 
@@ -31,6 +31,15 @@ gcd01@ gcd(0)  &lt;=> true .
 gcd02@ gcd(N) \ gcd(M)  &lt;=> N  &lt;= M, L := M mod N | gcd(L).
 
 gcd(94017), gcd(1155), gcd(2035).
+
+# Example 2
+
+```	
+	prime01 @ prime(N) ==> N>2 | prime(N-1).
+	prime02 @ prime(A) | prime(B)  &lt;=> B > A, B mod A == 0 | true.
+	prime(20).
+	#result: prime(19), prime(17), prime(13), prime(11), prime(7), prime(5), prime(3), prime(2).
+```
 
 More example see: GoCHR/example
 
@@ -95,7 +104,7 @@ The following operators are from the Go programming language (see:  &lt;https://
 Precedence | Operator    
 ---------- | --------
 6   |      unary operators +, -, !, ^, ¬ 
-5   |     *, /, %, div, mod, &, &^,  &lt; &lt;, >>
+5   |     *, /, %, div, mod, &, &^,  &lt;&lt;, >>
 4   |    +, -, ^, or 
 3   |    ==, !=,  &lt;,  &lt;=, >, >= and =&lt; (only for Prolog-like)
 2   |     &&
@@ -108,8 +117,8 @@ The operator | will be used as list-operator, as in [a|B]
 ## CHR-Rules
 
 ```prolog
-    Sum01 @ sum([], S)  &lt;=> S == 0 . 
-    Sum02 @ sum([X|Xs], S)  &lt;=> sum(Xs, S2), S == X + S2.
+    Sum01 @ sum([], S)  <=> S == 0 . 
+    Sum02 @ sum([X|Xs], S)  <=> sum(Xs, S2), S == X + S2.
     sum([1,2,3,4,5,6,7,8,9,10], S) // Goal 1
     #result: S == 55 .
     sum([X,2,3], 6). // Goal 2
@@ -158,11 +167,4 @@ The operator | will be used as list-operator, as in [a|B]
 	fmt.Printf("\nresult: %v = %v \n", rBool, rList) 
 ```
 
-# Example 2
 
-```prolog	
-	prime01 @ prime(N) ==> N>2 | prime(N-1).
-	prime02 @ prime(A) | prime(B)  &lt;=> B > A, B mod A == 0 | true.
-	prime(20).
-	#result: prime(19), prime(17), prime(13), prime(11), prime(7), prime(5), prime(3), prime(2).
-```
