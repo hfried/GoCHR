@@ -27,7 +27,7 @@ distributed with this software, it is also available online at
 ```
 	gcd01@ gcd(0)  &lt;=> true .
 	// logarithmic complexity
-	gcd02@ gcd(N) \ gcd(M)  &lt;=> N  &lt;= M, L := M mod N | gcd(L).
+	gcd02@ gcd(N) \ gcd(M)  <=> N <= M, L := M mod N | gcd(L).
 
 	gcd(94017), gcd(1155), gcd(2035).
 	#result: gcd(11).
