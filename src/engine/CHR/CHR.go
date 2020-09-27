@@ -3314,13 +3314,74 @@ func traceCheckGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, o
 	TraceHead(3, 3, "check guard: ", g.String())
 	g1 := Substitute(*g, env).(Compound)
 	Trace(3, ", subst: ", g1)
-	if g.Functor == ":=" || g1.Functor == "is" || g1.Functor == "=" {
+
+	f := g.Functor
+	if f == ":=" || f == "is" || f == "=" {
 		if !(g1.Args[0].Type() == VariableType) {
 			return env, false
 		}
 		a := Eval(g1.Args[1])
 		env2 = AddBinding(g1.Args[0].(Variable), a, env)
 		return env2, true
+	}
+
+	b2t := f == "buchstabiertZuText" || f == "spell2text"
+	t2b := f == "textZuBuchstabiert" || f == "text2spell"
+	if b2t || t2b {
+		if len(g1.Args) != 2 {
+			if len(g1.Args) < 2 {
+				// missing Arguments
+				Trace(1, ", missing Arguments: ", g1)
+			} else {
+				// to many Arguments
+				Trace(1, ", to many Arguments: ", g1)
+			}
+			return env, false
+		}
+		v0 := g1.Args[0].Type() == VariableType
+		v1 := g1.Args[1].Type() == VariableType
+		if v0 && v1 {
+			return env, false
+		}
+		if v1 && b2t {
+			erg, ok := Spell2text(Eval(g1.Args[0]))
+			if !ok {
+				return env, ok
+			}
+			env2 = AddBinding(g1.Args[1].(Variable), erg, env)
+			return env2, ok
+		}
+		if v1 && t2b {
+			erg, ok := Text2spell(Eval(g1.Args[0]))
+			if !ok {
+				return env, ok
+			}
+			env2 = AddBinding(g1.Args[1].(Variable), erg, env)
+			return env2, ok
+		}
+		if v0 && b2t {
+			erg, ok := Text2spell(Eval(g1.Args[1]))
+			if !ok {
+				return env, ok
+			}
+			env2 = AddBinding(g1.Args[0].(Variable), erg, env)
+			return env2, ok
+		}
+		if v0 && t2b {
+			erg, ok := Spell2text(Eval(g1.Args[1]))
+			if !ok {
+				return env, ok
+			}
+			env2 = AddBinding(g1.Args[0].(Variable), erg, env)
+			return env2, ok
+		}
+		// arg0 und arg1 sind Werte
+		if b2t {
+			return env, CheckSpellAndText(Eval(g1.Args[0]), Eval(g1.Args[1]))
+		}
+		if t2b {
+			return env, CheckSpellAndText(Eval(g1.Args[1]), Eval(g1.Args[0]))
+		}
 	}
 
 	t1 := Eval(g1)
@@ -3377,7 +3438,8 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 
 	g1 := Substitute(*g, env).(Compound)
 
-	if g.Functor == ":=" || g1.Functor == "is" || g1.Functor == "=" {
+	f := g1.Functor
+	if f == ":=" || f == "is" || f == "=" {
 		if !(g1.Args[0].Type() == VariableType) {
 			return env, false
 		}
@@ -3385,6 +3447,64 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 		env2 = AddBinding(g1.Args[0].(Variable), a, env)
 		return env2, true
 	}
+
+	b2t := f == "buchstabiertZuText" || f == "spell2text"
+	t2b := f == "textZuBuchstabiert" || f == "text2spell"
+	if b2t || t2b {
+		if len(g1.Args) != 2 {
+			if len(g1.Args) < 2 {
+				// missing Arguments
+			} else {
+				// to many Arguments
+			}
+			return env, false
+		}
+		v0 := g1.Args[0].Type() == VariableType
+		v1 := g1.Args[1].Type() == VariableType
+		if v0 && v1 {
+			return env, false
+		}
+		if v1 && b2t {
+			erg, ok := Spell2text(Eval(g1.Args[0]))
+			if !ok {
+				return env, ok
+			}
+			env2 = AddBinding(g1.Args[1].(Variable), erg, env)
+			return env2, ok
+		}
+		if v1 && t2b {
+			erg, ok := Text2spell(Eval(g1.Args[0]))
+			if !ok {
+				return env, ok
+			}
+			env2 = AddBinding(g1.Args[1].(Variable), erg, env)
+			return env2, ok
+		}
+		if v0 && b2t {
+			erg, ok := Text2spell(Eval(g1.Args[1]))
+			if !ok {
+				return env, ok
+			}
+			env2 = AddBinding(g1.Args[0].(Variable), erg, env)
+			return env2, ok
+		}
+		if v0 && t2b {
+			erg, ok := Spell2text(Eval(g1.Args[1]))
+			if !ok {
+				return env, ok
+			}
+			env2 = AddBinding(g1.Args[0].(Variable), erg, env)
+			return env2, ok
+		}
+		// arg0 und arg1 sind Werte
+		if b2t {
+			return env, CheckSpellAndText(Eval(g1.Args[0]), Eval(g1.Args[1]))
+		}
+		if t2b {
+			return env, CheckSpellAndText(Eval(g1.Args[1]), Eval(g1.Args[0]))
+		}
+	}
+
 	t1 := Eval(g1)
 	switch t1.Type() {
 	case BoolType:
