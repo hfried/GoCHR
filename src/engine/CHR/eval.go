@@ -10,6 +10,7 @@ package chr
 
 import (
 	// "fmt"
+
 	. "github.com/hfried/GoCHR/src/engine/terms"
 )
 
@@ -634,4 +635,190 @@ func evalCons(t1 Term, a1 Term, typ1 Type, a2 Term, typ2 Type) Term {
 	}
 	// fmt.Printf(" Eval-Cons:  A1: '%s', | A2: '%s', == '%s' \n", a1, a2, t2)
 	return t2
+}
+
+var Char2SpellMap = map[rune]string{
+	'1': "Eins", '2': "Zwei", '3': "Drei", '4': "Vier", '5': "Fünf",
+	'6': "Sechs", '7': "Sieben", '8': "Acht", '9': "Neun", '0': "Null",
+	'ß': "Eszet",
+	'.': "Punkt", '/': "Schrägstrich", '@': "Ät", '%': "Prozent", '-': "Bindestrich",
+	'_': "Unterstrich", '#': "Raute", ':': "Doppelpunkt", ',': "Komma", ';': "Semikolon",
+	'|': "Senkrechter Strich", '\'': "Hochkomma",
+	'=': "Gleich", '&': "Und", '!': "Ausrufezeichen", '?': "Fragezeichen",
+	'+': "Plus", '*': "Sternchen", '´': "Akut-Akzent", '`': "Gravis-Akzent", '~': "Tilde",
+	'(': "Runde Klammer auf", ')': "Runde Klammer zu", '{': "Geschweifte Klammer auf", '}': "Geschweifte Klammer zu",
+	'[': "Eckige Klammer auf", ']': "Eckige Klammer zu", '<': "Spitze Klammer auf", '>': "Spitze Klammer zu",
+	'^': "Hochzeichen", '°': "Grad-Zeichen",
+	'"': "Anführungszeichen", '§': "Paragraph", '$': "Dollarzeichen",
+	'\\': "Umgekehrter Schrägstrich", '€': "Euro"}
+
+var initSpell2CharMap = false
+
+// Synonyme
+var Spell2CharMap = map[string]rune{
+	"Stern": '*', "at": '@', "Klammeraffe": '@',
+	"Minus": '-', "Minuszeichen": '-',
+	"Apostroph": '\'', "Anführungsstrich": '"', "Anführungsstriche": '"', "Gänsefüßchen": '"',
+	"Backslash": '\\', "Einschaltungszeichen": '^', "Grad": '°', "Gleichheitszeichen": '=',
+	"Strichpunkt": ';', "Nummernzeichen": '#',
+	// fFlLmMnNrRsS
+	"ef": 'F', "el": 'L', "em": 'M', "en": 'N', "er": 'R', "es": 'S',
+	"Zeh": 'C'}
+
+var Spell2WordsMap = map[string]map[string]rune{
+	"senkrechter": {"Strich": '|'},
+	"vertikaler":  {"Strich": '|'}, "umgekehrter": {"Schrägstrich": '\\'},
+	"Senkrechter": {"Strich": '|'},
+	"Vertikaler":  {"Strich": '|'}, "Umgekehrter": {"Schrägstrich": '\\'},
+	"Accent":  {"aigu": '´', "grave": '`'},
+	"Akzent":  {"aigu": '´', "akut": '´', "grave": '`', "gravis": '`'},
+	"kleiner": {"als": '<'}, "größer": {"als": '>'},
+	"einfaches": {"Ausführungszeichen": '\''},
+	"scharfes":  {"es": 'ß', "s": 'ß', "S": 'ß', "Es": 'ß'},
+	"es":        {"Zet": 'ß', "Z": 'ß', "z": 'ß'},
+	"New":       {"York": 'N'}}
+
+var Spell3WordsMap = map[string]map[string]map[string]rune{
+	"runde":        {"Klammer": {"auf": '(', "zu": ')'}},
+	"geschweifte":  {"Klammer": {"auf": '{', "zu": '}'}},
+	"geschwungene": {"Klammer": {"auf": '{', "zu": '}'}},
+	"eckige":       {"Klammer": {"auf": '[', "zu": ']'}},
+	"spitze":       {"Klammer": {"auf": '<', "zu": '>'}},
+	"Runde":        {"Klammer": {"auf": '(', "zu": ')'}},
+	"Geschweifte":  {"Klammer": {"auf": '{', "zu": '}'}},
+	"Geschwungene": {"Klammer": {"auf": '{', "zu": '}'}},
+	"Eckige":       {"Klammer": {"auf": '[', "zu": ']'}},
+	"Spitze":       {"Klammer": {"auf": '<', "zu": '>'}},
+}
+
+func InitSpell2CharMap() {
+	for runeVar, strVar := range Char2SpellMap {
+		Spell2CharMap[strVar] = runeVar
+	}
+	initSpell2CharMap = true
+}
+
+func selectOneRune(m map[string]rune, str string) rune {
+	r, ok := m[str]
+	if ok {
+		// fmt.Println(" One Rune >", string(r), "<")
+		return r
+	}
+	for _, val := range m {
+		r = val
+		break
+	}
+	// fmt.Println(" Ersatz: = >", string(r), "<")
+	return r
+}
+
+func Spell2text(spell Term) (Term, bool) {
+	if spell.Type() == ListType {
+		if !initSpell2CharMap {
+			InitSpell2CharMap()
+		}
+		spell3Words2rest := map[string]map[string]rune{}
+		spell3Words1rest := map[string]rune{}
+		spell2Words1rest := map[string]rune{}
+		list := spell.(List)
+		var text String
+		var r rune
+		var first rune
+		var ok bool
+		for _, ele := range list {
+			if ele.Type() == StringType {
+				s := ele.(String)
+				str := string(s)
+				// fmt.Println("String ", idx, "=", str)
+
+				l := len(str)
+				if l < 3 {
+					continue
+				}
+				str = str[1 : l-1]
+				for _, ru := range str {
+					first = ru
+					break
+				}
+				if len(spell3Words1rest) == 0 {
+					if len(spell3Words2rest) == 0 {
+						if len(spell2Words1rest) == 0 {
+							spell3Words2rest, ok = Spell3WordsMap[str]
+							if ok {
+								// fmt.Println("Spell 3 WordsMap OK:", str)
+								continue
+							}
+							spell2Words1rest, ok = Spell2WordsMap[str]
+							if ok {
+								// fmt.Println("Spell 2 WordsMap OK:", str)
+								continue
+							}
+							r, ok = Spell2CharMap[str]
+							if ok {
+								text += String(r)
+							} else {
+								// "ch..." oder "Ch..."
+								if (str[0] == 'c' || str[0] == 'C') && l > 3 && str[1] == 'h' {
+									if str == "Charly" || str == "Charlie" {
+										text += String("C")
+									} else {
+										text += String("CH")
+									}
+									continue
+								}
+								if (str[0] == 'S' || str[0] == 's') && l > 4 && str[1] == 'c' && str[2] == 'h' {
+									text += String("SCH")
+									continue
+								}
+								text += String(first) // main case: the first letter
+							}
+						} else { // len(spell2Words1rest) > 0
+							// fmt.Println("in spell 2 Words 1 rest")
+							text += String(selectOneRune(spell2Words1rest, str))
+							spell2Words1rest = map[string]rune{}
+						}
+					} else { // len(spell3Words2rest) > 0
+						// fmt.Println("Klammer = ", str)
+						spell3Words1rest = spell3Words2rest["Klammer"]
+						spell3Words2rest = map[string]map[string]rune{}
+					}
+				} else { // len(spell3Words1rest) > 0
+					// fmt.Println("in spell 3 Words 1 rest")
+					text += String(selectOneRune(spell3Words1rest, str))
+					spell3Words1rest = map[string]rune{}
+				}
+			}
+		}
+		text = "\"" + text + "\""
+		return text, true
+	}
+	return spell, false
+}
+
+func Text2spell(text Term) (Term, bool) {
+	var spell List
+	if text.Type() == StringType {
+		str := text.(String)
+		// fmt.Println("Str:", str)
+		l := len(str)
+		if l < 3 {
+			return spell, false
+		}
+		str = str[1 : l-1]
+		for _, ele := range str {
+
+			s, ok := Char2SpellMap[ele]
+			if !ok {
+				s = string(ele)
+			}
+			spell = append(spell, String(s))
+		}
+		return spell, true
+	}
+	return spell, false
+}
+
+func CheckSpellAndText(spell Term, text Term) bool {
+	//if text.Type
+	return false
 }
