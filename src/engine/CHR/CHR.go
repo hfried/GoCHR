@@ -3327,7 +3327,10 @@ func traceCheckGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, o
 
 	b2t := f == "buchstabiertZuText" || f == "spell2text"
 	t2b := f == "textZuBuchstabiert" || f == "text2spell"
-	if b2t || t2b {
+	e2t := f == "emailZuText"
+	t2e := f == "textZuEmail"
+	// fmt.Println("b2t:", b2t, " t2b:", t2b, " e2t:", e2t, " t2e:", t2e)
+	if b2t || t2b || e2t || t2e {
 		if len(g1.Args) != 2 {
 			if len(g1.Args) < 2 {
 				// missing Arguments
@@ -3343,38 +3346,42 @@ func traceCheckGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, o
 		if v0 && v1 {
 			return env, false
 		}
-		if v1 && b2t {
-			erg, ok := Spell2text(Eval(g1.Args[0]))
+		var erg Term
+		if v1 {
+			if b2t {
+				erg, ok = Spell2text(Eval(g1.Args[0]))
+			} else if t2b {
+				erg, ok = Text2spell(Eval(g1.Args[0]))
+			} else if e2t {
+				erg, ok = Email2text(Eval(g1.Args[0]))
+			} else { // t2e
+				erg, ok = Text2email(Eval(g1.Args[0]))
+			}
+
 			if !ok {
 				return env, ok
 			}
 			env2 = AddBinding(g1.Args[1].(Variable), erg, env)
 			return env2, ok
 		}
-		if v1 && t2b {
-			erg, ok := Text2spell(Eval(g1.Args[0]))
-			if !ok {
-				return env, ok
+
+		if v0 {
+			if b2t {
+				erg, ok = Text2spell(Eval(g1.Args[1]))
+			} else if t2b {
+				erg, ok = Spell2text(Eval(g1.Args[1]))
+			} else if e2t {
+				erg, ok = Text2email(Eval(g1.Args[1]))
+			} else { // t2e
+				erg, ok = Email2text(Eval(g1.Args[1]))
 			}
-			env2 = AddBinding(g1.Args[1].(Variable), erg, env)
-			return env2, ok
-		}
-		if v0 && b2t {
-			erg, ok := Text2spell(Eval(g1.Args[1]))
-			if !ok {
-				return env, ok
-			}
-			env2 = AddBinding(g1.Args[0].(Variable), erg, env)
-			return env2, ok
-		}
-		if v0 && t2b {
-			erg, ok := Spell2text(Eval(g1.Args[1]))
 			if !ok {
 				return env, ok
 			}
 			env2 = AddBinding(g1.Args[0].(Variable), erg, env)
 			return env2, ok
 		}
+
 		// arg0 und arg1 sind Werte
 		if b2t {
 			return env, CheckSpellAndText(Eval(g1.Args[0]), Eval(g1.Args[1]))
@@ -3450,7 +3457,10 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 
 	b2t := f == "buchstabiertZuText" || f == "spell2text"
 	t2b := f == "textZuBuchstabiert" || f == "text2spell"
-	if b2t || t2b {
+	e2t := f == "emailZuText"
+	t2e := f == "textZuEmail"
+	// fmt.Println("b2t:", b2t, " t2b:", t2b, " e2t:", e2t, " t2e:", t2e)
+	if b2t || t2b || e2t || t2e {
 		if len(g1.Args) != 2 {
 			if len(g1.Args) < 2 {
 				// missing Arguments
@@ -3464,32 +3474,35 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 		if v0 && v1 {
 			return env, false
 		}
-		if v1 && b2t {
-			erg, ok := Spell2text(Eval(g1.Args[0]))
+		var erg Term
+		if v1 {
+			if b2t {
+				erg, ok = Spell2text(Eval(g1.Args[0]))
+			} else if t2b {
+				erg, ok = Text2spell(Eval(g1.Args[0]))
+			} else if e2t {
+				erg, ok = Email2text(Eval(g1.Args[0]))
+			} else { // t2e
+				erg, ok = Text2email(Eval(g1.Args[0]))
+			}
+
 			if !ok {
 				return env, ok
 			}
 			env2 = AddBinding(g1.Args[1].(Variable), erg, env)
 			return env2, ok
 		}
-		if v1 && t2b {
-			erg, ok := Text2spell(Eval(g1.Args[0]))
-			if !ok {
-				return env, ok
+
+		if v0 {
+			if b2t {
+				erg, ok = Text2spell(Eval(g1.Args[1]))
+			} else if t2b {
+				erg, ok = Spell2text(Eval(g1.Args[1]))
+			} else if e2t {
+				erg, ok = Text2email(Eval(g1.Args[1]))
+			} else { // t2e
+				erg, ok = Email2text(Eval(g1.Args[1]))
 			}
-			env2 = AddBinding(g1.Args[1].(Variable), erg, env)
-			return env2, ok
-		}
-		if v0 && b2t {
-			erg, ok := Text2spell(Eval(g1.Args[1]))
-			if !ok {
-				return env, ok
-			}
-			env2 = AddBinding(g1.Args[0].(Variable), erg, env)
-			return env2, ok
-		}
-		if v0 && t2b {
-			erg, ok := Spell2text(Eval(g1.Args[1]))
 			if !ok {
 				return env, ok
 			}
