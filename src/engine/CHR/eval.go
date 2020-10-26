@@ -135,6 +135,10 @@ func evalBinaryOperator(t1, a1 Term, typ1 Type, a2 Term, typ2 Type) Term {
 }
 
 func evalN_aryOperator(t1 Term, args []Term, typs []Type, n int) Term {
+	switch t1.(Compound).Functor {
+	case "sprint":
+
+	}
 	return t1
 }
 
@@ -658,25 +662,38 @@ var initSpell2CharMap = false
 var Spell2CharMap = map[string]rune{
 	"Stern": '*', "at": '@', "Klammeraffe": '@',
 	"Minus": '-', "Minuszeichen": '-',
-	"Apostroph": '\'', "Anführungsstrich": '"', "Anführungsstriche": '"', "Gänsefüßchen": '"',
-	"Backslash": '\\', "Einschaltungszeichen": '^', "Grad": '°', "Gleichheitszeichen": '=',
-	"Strichpunkt": ';', "Nummernzeichen": '#',
+	"Apostroph":        '\'',
+	"Anführungsstrich": '"', "Anführungsstriche": '"',
+	"Anführungszeichen": '"', "Gänsefüßchen": '"',
+	"Backslash": '\\', "Rückschrägstrich": '\\',
+	"Einschaltungszeichen": '^', "Einschaltzeichen": '^', "Häkchen": '^', "Dach": '^',
+	"Grad": '°', "Gleichheitszeichen": '=',
+	"Strichpunkt": ';', "Nummernzeichen": '#', "Doppelkreuz": '#',
 	// fFlLmMnNrRsS
-	"ef": 'F', "el": 'L', "em": 'M', "en": 'N', "er": 'R', "es": 'S',
-	"Zeh": 'C'}
+
+	"ah": 'A', "be": 'B', "Zeh": 'C', "de": 'D', "eh": 'E',
+	"ef": 'F', "geh": 'G', "ha": 'h', "ie": 'i', "jot": 'j',
+	"ka": 'K', "el": 'L', "em": 'M', "en": 'N', "oh": 'O', "pe": 'P', "Kuh": 'q',
+	"er": 'R', "es": 'S', "Tee": 't', "uh": 'U', "Pfau": 'V', "weh": 'W',
+	"ixs": 'x', "ysilon": 'y', "zet": 'Z'}
 
 var Spell2WordsMap = map[string]map[string]rune{
+	"ist":         {"gleich": '='},
 	"senkrechter": {"Strich": '|'},
-	"vertikaler":  {"Strich": '|'}, "umgekehrter": {"Schrägstrich": '\\'},
+	"vertikaler":  {"Strich": '|'},
+	"umgekehrter": {"Schrägstrich": '\\'},
+	"rückwärts":   {"Schrägstrich": '\\'},
 	"Senkrechter": {"Strich": '|'},
-	"Vertikaler":  {"Strich": '|'}, "Umgekehrter": {"Schrägstrich": '\\'},
-	"Accent":  {"aigu": '´', "grave": '`'},
-	"Akzent":  {"aigu": '´', "akut": '´', "grave": '`', "gravis": '`'},
-	"kleiner": {"als": '<'}, "größer": {"als": '>'},
-	"einfaches": {"Ausführungszeichen": '\''},
+	"Vertikaler":  {"Strich": '|'},
+	"Umgekehrter": {"Schrägstrich": '\\'},
+	"Accent":      {"aigu": '´', "grave": '`'},
+	"Akzent":      {"aigu": '´', "akut": '´', "grave": '`', "gravis": '`'},
+	"kleiner":     {"als": '<'}, "größer": {"als": '>'},
+	"einfaches": {"Ausführungszeichen": '\'', "Anführungszeichen": '\''},
 	"scharfes":  {"es": 'ß', "s": 'ß', "S": 'ß', "Es": 'ß'},
 	"es":        {"Zet": 'ß', "Z": 'ß', "z": 'ß'},
-	"New":       {"York": 'N'}}
+	"New":       {"York": 'N'},
+	"doppeltes": {"Anführungszeichen": '"'}}
 
 var Spell3WordsMap = map[string]map[string]map[string]rune{
 	"runde":        {"Klammer": {"auf": '(', "zu": ')'}},
@@ -813,7 +830,7 @@ func Text2spell(text Term) (Term, bool) {
 			}
 			spell = append(spell, String(s))
 		}
-		return spell, true
+		return list2cstring(spell), true
 	}
 	return spell, false
 }
@@ -821,4 +838,97 @@ func Text2spell(text Term) (Term, bool) {
 func CheckSpellAndText(spell Term, text Term) bool {
 	//if text.Type
 	return false
+}
+
+func Email2text(spell Term) (Term, bool) {
+	if spell.Type() == ListType {
+		if !initSpell2CharMap {
+			InitSpell2CharMap()
+		}
+		list := spell.(List)
+		last := len(list) - 1
+		var text String
+		var r rune
+		var ok bool
+		for idx, ele := range list {
+			if ele.Type() == StringType {
+				s := ele.(String)
+				str := string(s)
+				// fmt.Println("String ", idx, "=", str)
+
+				l := len(str)
+				if l < 3 {
+					continue
+				}
+				str = str[1 : l-1]
+
+				r, ok = Spell2CharMap[str]
+				if ok && idx != last {
+					text += String(r)
+				} else {
+					text += String(str) // main case: the first letter
+				}
+
+			}
+		}
+		text = "\"" + text + "\""
+		return text, true
+	}
+	return spell, false
+}
+
+func Text2email(text Term) (Term, bool) {
+	var spell List
+	if text.Type() == StringType {
+		str := text.(String)
+		// fmt.Println("Str:", str)
+		l := len(str)
+		if l < 3 {
+			return spell, false
+		}
+		str = str[1 : l-1]
+		substr := ""
+		for _, ele := range str {
+
+			s, ok := Char2SpellMap[ele]
+			if ok {
+				if substr == "" {
+					spell = append(spell, String(s))
+				} else {
+					spell = append(spell, String(substr))
+					substr = ""
+					spell = append(spell, String(s))
+				}
+			} else {
+				substr += string(ele)
+			}
+
+		}
+		if substr != "" {
+			spell = append(spell, String(substr))
+		}
+		return list2cstring(spell), true
+	}
+	return spell, false
+}
+
+func list2cstring(list Term) Term {
+	text := ""
+	if list.Type() == ListType {
+		l := list.(List)
+		for idx, ele := range l {
+			if ele.Type() == StringType {
+				s := ele.(String)
+				str := string(s)
+				if idx == 0 {
+					text = str
+				} else {
+					text = text + ", " + str
+				}
+			}
+		}
+		text = "\"" + text + "\""
+		return String(text)
+	}
+	return list
 }
