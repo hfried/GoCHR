@@ -104,6 +104,7 @@ The following operators are from the Go programming language (see:  &lt;https://
 
 Precedence | Operator    
 ---------- | --------
+7   |       <function>(...)
 6   |      unary operators +, -, !, ^, ¬ 
 5   |     *, /, %, div, mod, &, &^,  &lt;&lt;, >>
 4   |    +, -, ^, or 
