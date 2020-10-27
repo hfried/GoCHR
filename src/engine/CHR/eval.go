@@ -10,6 +10,7 @@ package chr
 
 import (
 	// "fmt"
+	"strings"
 
 	. "github.com/hfried/GoCHR/src/engine/terms"
 )
@@ -660,57 +661,49 @@ var initSpell2CharMap = false
 
 // Synonyme
 var Spell2CharMap = map[string]rune{
-	"Stern": '*', "at": '@', "Klammeraffe": '@',
-	"Minus": '-', "Minuszeichen": '-',
-	"Apostroph":        '\'',
-	"Anführungsstrich": '"', "Anführungsstriche": '"',
-	"Anführungszeichen": '"', "Gänsefüßchen": '"',
-	"Backslash": '\\', "Rückschrägstrich": '\\',
-	"Einschaltungszeichen": '^', "Einschaltzeichen": '^', "Häkchen": '^', "Dach": '^',
-	"Grad": '°', "Gleichheitszeichen": '=',
-	"Strichpunkt": ';', "Nummernzeichen": '#', "Doppelkreuz": '#',
+	"stern": '*', "at": '@', "klammeraffe": '@',
+	"minus": '-', "minuszeichen": '-',
+	"apostroph":        '\'',
+	"anführungsstrich": '"', "anführungsstriche": '"',
+	"anführungszeichen": '"', "gänsefüßchen": '"',
+	"backslash": '\\', "rückschrägstrich": '\\',
+	"einschaltungszeichen": '^', "einschaltzeichen": '^', "häkchen": '^', "dach": '^',
+	"grad": '°', "gleichheitszeichen": '=',
+	"strichpunkt": ';', "nummernzeichen": '#', "doppelkreuz": '#',
 	// fFlLmMnNrRsS
 
-	"ah": 'A', "be": 'B', "Zeh": 'C', "de": 'D', "eh": 'E',
-	"ef": 'F', "geh": 'G', "ha": 'h', "ie": 'i', "jot": 'j',
-	"ka": 'K', "el": 'L', "em": 'M', "en": 'N', "oh": 'O', "pe": 'P', "Kuh": 'q',
-	"er": 'R', "es": 'S', "Tee": 't', "uh": 'U', "Pfau": 'V', "weh": 'W',
+	"ah": 'A', "be": 'B', "zeh": 'C', "de": 'D', "eh": 'E',
+	"ef": 'F', "geh": 'G', "ha": 'H', "ie": 'I', "jot": 'J',
+	"ka": 'K', "el": 'L', "em": 'M', "en": 'N', "oh": 'O', "pe": 'P', "kuh": 'Q', "qu": 'Q',
+	"er": 'R', "es": 'S', "tee": 't', "uh": 'U', "Pfau": 'V', "weh": 'W',
 	"ixs": 'x', "ysilon": 'y', "zet": 'Z'}
 
 var Spell2WordsMap = map[string]map[string]rune{
 	"ist":         {"gleich": '='},
-	"senkrechter": {"Strich": '|'},
-	"vertikaler":  {"Strich": '|'},
-	"umgekehrter": {"Schrägstrich": '\\'},
-	"rückwärts":   {"Schrägstrich": '\\'},
-	"Senkrechter": {"Strich": '|'},
-	"Vertikaler":  {"Strich": '|'},
-	"Umgekehrter": {"Schrägstrich": '\\'},
-	"Accent":      {"aigu": '´', "grave": '`'},
-	"Akzent":      {"aigu": '´', "akut": '´', "grave": '`', "gravis": '`'},
+	"senkrechter": {"strich": '|'},
+	"vertikaler":  {"strich": '|'},
+	"umgekehrter": {"schrägstrich": '\\'},
+	"rückwärts":   {"schrägstrich": '\\'},
+	"accent":      {"aigu": '´', "akut": '´', "grave": '`', "gravis": '`'},
+	"akzent":      {"aigu": '´', "akut": '´', "grave": '`', "gravis": '`'},
 	"kleiner":     {"als": '<'}, "größer": {"als": '>'},
-	"einfaches": {"Ausführungszeichen": '\'', "Anführungszeichen": '\''},
+	"einfaches": {"ausführungszeichen": '\'', "anführungszeichen": '\''},
 	"scharfes":  {"es": 'ß', "s": 'ß', "S": 'ß', "Es": 'ß'},
-	"es":        {"Zet": 'ß', "Z": 'ß', "z": 'ß'},
-	"New":       {"York": 'N'},
-	"doppeltes": {"Anführungszeichen": '"'}}
+	"es":        {"zet": 'ß', "z": 'ß'},
+	"new":       {"york": 'N'},
+	"doppeltes": {"anführungszeichen": '"'}}
 
 var Spell3WordsMap = map[string]map[string]map[string]rune{
-	"runde":        {"Klammer": {"auf": '(', "zu": ')'}},
-	"geschweifte":  {"Klammer": {"auf": '{', "zu": '}'}},
-	"geschwungene": {"Klammer": {"auf": '{', "zu": '}'}},
-	"eckige":       {"Klammer": {"auf": '[', "zu": ']'}},
-	"spitze":       {"Klammer": {"auf": '<', "zu": '>'}},
-	"Runde":        {"Klammer": {"auf": '(', "zu": ')'}},
-	"Geschweifte":  {"Klammer": {"auf": '{', "zu": '}'}},
-	"Geschwungene": {"Klammer": {"auf": '{', "zu": '}'}},
-	"Eckige":       {"Klammer": {"auf": '[', "zu": ']'}},
-	"Spitze":       {"Klammer": {"auf": '<', "zu": '>'}},
+	"runde":        {"klammer": {"auf": '(', "zu": ')'}},
+	"geschweifte":  {"klammer": {"auf": '{', "zu": '}'}},
+	"geschwungene": {"klammer": {"auf": '{', "zu": '}'}},
+	"eckige":       {"klammer": {"auf": '[', "zu": ']'}},
+	"spitze":       {"klammer": {"auf": '<', "zu": '>'}},
 }
 
 func InitSpell2CharMap() {
 	for runeVar, strVar := range Char2SpellMap {
-		Spell2CharMap[strVar] = runeVar
+		Spell2CharMap[strings.ToLower(strVar)] = runeVar
 	}
 	initSpell2CharMap = true
 }
@@ -752,7 +745,7 @@ func Spell2text(spell Term) (Term, bool) {
 				if l < 3 {
 					continue
 				}
-				str = str[1 : l-1]
+				str = strings.ToLower(str[1 : l-1])
 				for _, ru := range str {
 					first = ru
 					break
@@ -860,7 +853,7 @@ func Email2text(spell Term) (Term, bool) {
 				if l < 3 {
 					continue
 				}
-				str = str[1 : l-1]
+				str = strings.ToLower(str[1 : l-1])
 
 				r, ok = Spell2CharMap[str]
 				if ok && idx != last {
