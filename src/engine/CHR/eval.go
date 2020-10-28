@@ -799,7 +799,7 @@ func Spell2text(spell Term) (Term, bool) {
 				}
 			} else if ele.Type() == CompoundType {
 				comp := ele.(Compound)
-				fmt.Println("  ############# Functor: >", comp.Functor, "< #########")
+				// fmt.Println("  ############# Functor: >", comp.Functor, "< #########")
 				if comp.Functor == "zahl" {
 					text = text + String(fmt.Sprint(comp.Args[0]))
 				} else if len(comp.Args) > 1 && comp.Args[1].Type() == StringType {
