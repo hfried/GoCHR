@@ -9,7 +9,7 @@
 package chr
 
 import (
-	// "fmt"
+	"fmt"
 	"strings"
 
 	. "github.com/hfried/GoCHR/src/engine/terms"
@@ -797,6 +797,14 @@ func Spell2text(spell Term) (Term, bool) {
 					text += String(selectOneRune(spell3Words1rest, str))
 					spell3Words1rest = map[string]rune{}
 				}
+			} else if ele.Type() == CompoundType {
+				comp := ele.(Compound)
+				if comp.Functor == "zahl" {
+					text = text + String(fmt.Sprint(comp.Args[0]))
+				} else if len(comp.Args) > 1 && comp.Args[1].Type() == StringType {
+					text = text + String(comp.Args[1].(String)[0])
+				}
+
 			}
 		}
 		text = "\"" + text + "\""
