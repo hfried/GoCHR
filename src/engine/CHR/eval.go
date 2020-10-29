@@ -10,6 +10,7 @@ package chr
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 
 	. "github.com/hfried/GoCHR/src/engine/terms"
@@ -322,6 +323,12 @@ func evalPlus(t1 Term, a1 Term, typ1 Type, a2 Term, typ2 Type) Term {
 			return a1.(Int) + a2.(Int)
 		case FloatType:
 			return Float(float64(a1.(Int)) + float64(a2.(Float)))
+		case StringType:
+			s := string(a2.(String))
+			s = s[1 : len(s)-1]
+			s = "\"" + strconv.Itoa(int(a1.(Int))) + s + "\""
+			fmt.Println(" >>> i + s >>>>> ", s)
+			return String(s)
 		default:
 			return t1
 		}
@@ -331,12 +338,29 @@ func evalPlus(t1 Term, a1 Term, typ1 Type, a2 Term, typ2 Type) Term {
 			return Float(float64(a1.(Float)) + float64(a2.(Int)))
 		case FloatType:
 			return a1.(Float) + a2.(Float)
+		case StringType:
+			s := string(a2.(String))
+			s = s[1 : len(s)-1]
+			return String("\"" + fmt.Sprintf("%f", float64(a1.(Float))) + s + "\"")
 		default:
 			return t1
 		}
 	case StringType:
-		if typ2 == StringType {
-			return a1.(String) + a2.(String)
+		switch typ2 {
+		case StringType:
+			s1 := string(a1.(String))
+			s2 := string(a2.(String))
+			s1 = s1[:len(s1)-1] + s2[1:]
+			fmt.Println(" >> s + s >>>>>> ", s1)
+			return String(s1)
+		case IntType:
+			s := string(a1.(String))
+			s = s[1 : len(s)-1]
+			s = "\"" + s + strconv.Itoa(int(a2.(Int))) + "\""
+			fmt.Println(" >> s + i >>>>>> ", s)
+			return String(s)
+		case FloatType:
+			return String(string(a1.(String)) + fmt.Sprintf("%f", float64(a2.(Float))))
 		}
 	}
 	return t1
