@@ -327,7 +327,7 @@ func evalPlus(t1 Term, a1 Term, typ1 Type, a2 Term, typ2 Type) Term {
 			s := string(a2.(String))
 			s = s[1 : len(s)-1]
 			s = "\"" + strconv.Itoa(int(a1.(Int))) + s + "\""
-			fmt.Println(" >>> i + s >>>>> ", s)
+			// fmt.Println(" >>> i + s >>>>> ", s)
 			return String(s)
 		default:
 			return t1
@@ -342,7 +342,7 @@ func evalPlus(t1 Term, a1 Term, typ1 Type, a2 Term, typ2 Type) Term {
 			s := string(a2.(String))
 			s = s[1:]
 			s = fmt.Sprintf("\"%g", float64(a1.(Float))) + s
-			fmt.Println(" >>> f + s >>>>> ", s)
+			// fmt.Println(" >>> f + s >>>>> ", s)
 			return String(s)
 		default:
 			return t1
@@ -353,19 +353,19 @@ func evalPlus(t1 Term, a1 Term, typ1 Type, a2 Term, typ2 Type) Term {
 			s1 := string(a1.(String))
 			s2 := string(a2.(String))
 			s1 = s1[:len(s1)-1] + s2[1:]
-			fmt.Println(" >> s + s >>>>>> ", s1)
+			// fmt.Println(" >> s + s >>>>>> ", s1)
 			return String(s1)
 		case IntType:
 			s := string(a1.(String))
 			s = s[1 : len(s)-1]
 			s = "\"" + s + strconv.Itoa(int(a2.(Int))) + "\""
-			fmt.Println(" >> s + i >>>>>> ", s)
+			//fmt.Println(" >> s + i >>>>>> ", s)
 			return String(s)
 		case FloatType:
 			s := string(a1.(String))
 			s = s[:len(s)-1]
 			s = s + fmt.Sprintf("%g\"", float64(a2.(Float)))
-			fmt.Println(" >> s + f >>>>>> ", s)
+			// fmt.Println(" >> s + f >>>>>> ", s)
 			return String(s)
 		}
 	}
