@@ -340,8 +340,10 @@ func evalPlus(t1 Term, a1 Term, typ1 Type, a2 Term, typ2 Type) Term {
 			return a1.(Float) + a2.(Float)
 		case StringType:
 			s := string(a2.(String))
-			s = s[1 : len(s)-1]
-			return String("\"" + fmt.Sprintf("%f", float64(a1.(Float))) + s + "\"")
+			s = s[1:]
+			s = fmt.Sprintf("\"%g", float64(a1.(Float))) + s
+			fmt.Println(" >>> f + s >>>>> ", s)
+			return String(s)
 		default:
 			return t1
 		}
@@ -360,7 +362,11 @@ func evalPlus(t1 Term, a1 Term, typ1 Type, a2 Term, typ2 Type) Term {
 			fmt.Println(" >> s + i >>>>>> ", s)
 			return String(s)
 		case FloatType:
-			return String(string(a1.(String)) + fmt.Sprintf("%f", float64(a2.(Float))))
+			s := string(a1.(String))
+			s = s[:len(s)-1]
+			s = s + fmt.Sprintf("%g\"", float64(a2.(Float)))
+			fmt.Println(" >> s + f >>>>>> ", s)
+			return String(s)
 		}
 	}
 	return t1
