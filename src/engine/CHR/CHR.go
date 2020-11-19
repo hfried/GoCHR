@@ -3329,8 +3329,9 @@ func traceCheckGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, o
 	t2b := f == "textZuBuchstabiert" || f == "text2spell"
 	e2t := f == "emailZuText"
 	t2e := f == "textZuEmail"
+	z2z := f == "ziffernZuZahl"
 	// fmt.Println("b2t:", b2t, " t2b:", t2b, " e2t:", e2t, " t2e:", t2e)
-	if b2t || t2b || e2t || t2e {
+	if b2t || t2b || e2t || t2e || z2z {
 		if len(g1.Args) != 2 {
 			if len(g1.Args) < 2 {
 				// missing Arguments
@@ -3354,8 +3355,10 @@ func traceCheckGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, o
 				erg, ok = Text2spell(Eval(g1.Args[0]))
 			} else if e2t {
 				erg, ok = Email2text(Eval(g1.Args[0]))
-			} else { // t2e
+			} else if t2e { // t2e
 				erg, ok = Text2email(Eval(g1.Args[0]))
+			} else { //z2z
+				erg, ok = ZiffernZuZahl(Eval(g1.Args[0]))
 			}
 
 			if !ok {
@@ -3459,13 +3462,16 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 	t2b := f == "textZuBuchstabiert" || f == "text2spell"
 	e2t := f == "emailZuText"
 	t2e := f == "textZuEmail"
+	z2z := f == "ziffernZuZahl"
 	// fmt.Println("b2t:", b2t, " t2b:", t2b, " e2t:", e2t, " t2e:", t2e)
-	if b2t || t2b || e2t || t2e {
+	if b2t || t2b || e2t || t2e || z2z {
 		if len(g1.Args) != 2 {
 			if len(g1.Args) < 2 {
 				// missing Arguments
+				Trace(1, ", missing Arguments: ", g1)
 			} else {
 				// to many Arguments
+				Trace(1, ", to many Arguments: ", g1)
 			}
 			return env, false
 		}
@@ -3482,8 +3488,10 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 				erg, ok = Text2spell(Eval(g1.Args[0]))
 			} else if e2t {
 				erg, ok = Email2text(Eval(g1.Args[0]))
-			} else { // t2e
+			} else if t2e { // t2e
 				erg, ok = Text2email(Eval(g1.Args[0]))
+			} else { //z2z
+				erg, ok = ZiffernZuZahl(Eval(g1.Args[0]))
 			}
 
 			if !ok {
@@ -3509,6 +3517,7 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 			env2 = AddBinding(g1.Args[0].(Variable), erg, env)
 			return env2, ok
 		}
+
 		// arg0 und arg1 sind Werte
 		if b2t {
 			return env, CheckSpellAndText(Eval(g1.Args[0]), Eval(g1.Args[1]))
