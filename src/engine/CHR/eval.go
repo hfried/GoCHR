@@ -909,6 +909,45 @@ func Email2text(spell Term) (Term, bool) {
 	return spell, false
 }
 
+func ZiffernZuZahl(spell Term) (Term, bool) {
+	if spell.Type() == ListType {
+		if !initSpell2CharMap {
+			InitSpell2CharMap()
+		}
+
+		list := spell.(List)
+		var zahl String
+
+		for _, ele := range list {
+			if ele.Type() == StringType {
+				s := ele.(String)
+				str := string(s)
+				// fmt.Println("String ", idx, "=", str)
+
+				l := len(str)
+				if l < 3 {
+					continue
+				}
+				str = strings.ToLower(str[1 : l-1])
+				for _, ru := range str {
+					if ru >= '0' && ru <= '9' {
+						zahl += String(ru)
+					}
+				}
+			} else if ele.Type() == CompoundType {
+				comp := ele.(Compound)
+				// fmt.Println("  ############# Functor: >", comp.Functor, "< #########")
+				if comp.Functor == "zahl" {
+					zahl = zahl + String(fmt.Sprint(comp.Args[0]))
+				}
+			}
+		}
+		zahl = "\"" + zahl + "\""
+		return zahl, true
+	}
+	return spell, false
+}
+
 func Text2email(text Term) (Term, bool) {
 	var spell List
 	if text.Type() == StringType {
