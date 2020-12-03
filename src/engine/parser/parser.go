@@ -661,15 +661,16 @@ func sString(s *sc.Scanner) (Term, rune, bool) {
 	if trace {
 		fmt.Printf("--> sString : '%s'\n", s.TokenText())
 	}
-	var (
-		str string
-		err error
-	)
-	_, err = fmt.Sscan(s.TokenText(), &str)
-	if err == nil {
-		return String(str), s.Scan(), true
-	}
-	return String(str), s.Scan(), false
+	// var (
+	//	str string
+	//	err error
+	// )
+	//	_, err = fmt.Sscan(s.TokenText(), &str)
+	//	if err == nil {
+	//		return String(str), s.Scan(), true
+	//	}
+	//	return String(str), s.Scan(), false
+	return String(s.TokenText()), s.Scan(), true
 }
 
 func sChar(s *sc.Scanner) (Term, rune, bool) {
