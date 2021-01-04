@@ -989,7 +989,8 @@ func Text2email(text Term) (Term, bool) {
 		if substr != "" {
 			spell = append(spell, String(substr))
 		}
-		return list2cstring(spell), true
+		return list2sstring(spell), true
+		// return list2cstring(spell), true
 	}
 	return spell, false
 }
