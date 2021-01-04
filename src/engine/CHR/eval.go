@@ -692,6 +692,7 @@ var initSpell2CharMap = false
 // Synonyme
 var Spell2CharMap = map[string]rune{
 	"stern": '*', "at": '@', "klammeraffe": '@',
+	"affenschwanz": '@', "affenohr": '@', "affenschaukel": '@',
 	"minus": '-', "minuszeichen": '-',
 	"apostroph":        '\'',
 	"anführungsstrich": '"', "anführungsstriche": '"',
@@ -862,7 +863,8 @@ func Text2spell(text Term) (Term, bool) {
 			}
 			spell = append(spell, String(s))
 		}
-		return list2cstring(spell), true
+		return list2sstring(spell), true
+		// return list2cstring(spell), true
 	}
 	return spell, false
 }
@@ -898,7 +900,16 @@ func Email2text(spell Term) (Term, bool) {
 				if ok && idx != last {
 					text += String(r)
 				} else {
-					text += String(str) // main case: the first letter
+					text += String(str) // main case: the whole word
+				}
+
+			} else if ele.Type() == CompoundType {
+				comp := ele.(Compound)
+				// fmt.Println("  ############# Functor: >", comp.Functor, "< #########")
+				if comp.Functor == "zahl" {
+					text = text + String(fmt.Sprint(comp.Args[0]))
+				} else if len(comp.Args) > 1 && comp.Args[1].Type() == StringType {
+					text = text + String(comp.Args[1].(String)[0])
 				}
 
 			}
@@ -995,6 +1006,27 @@ func list2cstring(list Term) Term {
 					text = str
 				} else {
 					text = text + ", " + str
+				}
+			}
+		}
+		text = "\"" + text + "\""
+		return String(text)
+	}
+	return list
+}
+
+func list2sstring(list Term) Term {
+	text := ""
+	if list.Type() == ListType {
+		l := list.(List)
+		for idx, ele := range l {
+			if ele.Type() == StringType {
+				s := ele.(String)
+				str := string(s)
+				if idx == 0 {
+					text = str
+				} else {
+					text = text + "; " + str
 				}
 			}
 		}
