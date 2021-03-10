@@ -1033,9 +1033,9 @@ func improveEmail(l List) (List, int) {
 			rl = append(rl, ele)
 		}
 	}
-	fmt.Println("sl>>", sl, "<<")
-	fmt.Println("sb>>", sb, "<<")
-	fmt.Println("rl>>", rl, "<<")
+	//	fmt.Println("sl>>", sl, "<<")
+	//	fmt.Println("sb>>", sb, "<<")
+	//	fmt.Println("rl>>", rl, "<<")
 
 	revErg := List{}
 	// search Top-Level-Domain
@@ -1062,7 +1062,7 @@ func improveEmail(l List) (List, int) {
 			korrAnz++
 		}
 	}
-	fmt.Println("TLD revErg >>", revErg, "<< ")
+	//	fmt.Println("TLD revErg >>", revErg, "<< ")
 	// search DOT
 	if sb[idx] {
 		_, ok := Punkt[sl[idx]]
@@ -1071,13 +1071,13 @@ func improveEmail(l List) (List, int) {
 		}
 	}
 	revErg = append(revErg, String("punkt"))
-	fmt.Println("Punkt revErg >>", revErg, "<< ")
+	//	fmt.Println("Punkt revErg >>", revErg, "<< ")
 	//search  @ Hostname
 	etFound := false
 	if sb[idx] {
 		hn1, ok1 := HN1WordMap[sl[idx]]
 		hn2, ok2 := HN2WordMap[sl[idx-1]][sl[idx]]
-		fmt.Println("HN2Word aus: ", sl[idx-1], sl[idx], " wird: ", hn2)
+		//		fmt.Println("HN2Word aus: ", sl[idx-1], sl[idx], " wird: ", hn2)
 		if ok1 || ok2 {
 			if ok2 {
 				revErg = append(revErg, String(hn2))
@@ -1123,14 +1123,14 @@ func improveEmail(l List) (List, int) {
 			}
 
 		}
-		fmt.Println(" echtes @ etFound1:", etFound)
+		//		fmt.Println(" echtes @ etFound1:", etFound)
 		if !etFound {
 			// add a @ beween two words
 			firstWord := false
 			for i := idx; i > 0; i-- {
 				if sb[i] {
 					_, ok = StructEle[sl[i]]
-					fmt.Println(" i:", i, " ele:", sl[i], " structeEle:", ok)
+					//					fmt.Println(" i:", i, " ele:", sl[i], " structeEle:", ok)
 					if ok {
 						firstWord = false
 					} else {
@@ -1150,7 +1150,7 @@ func improveEmail(l List) (List, int) {
 				}
 			}
 		}
-		fmt.Println(" etFound1:", etFound, "idx:", idx, " idx1:", idx1, " idx2:", idx2)
+		//		fmt.Println(" etFound1:", etFound, "idx:", idx, " idx1:", idx1, " idx2:", idx2)
 		if etFound {
 			for i := idx; i >= idx1; i-- {
 				if sb[i] {
@@ -1168,7 +1168,7 @@ func improveEmail(l List) (List, int) {
 		idx = idx2
 	}
 
-	fmt.Println("@ Host revErg >>", revErg, "<< ")
+	//	fmt.Println("@ Host revErg >>", revErg, "<< ")
 	// @ found
 	for ; idx >= 0; idx-- {
 		if sb[idx] {
@@ -1177,14 +1177,14 @@ func improveEmail(l List) (List, int) {
 			revErg = append(revErg, rl[idx])
 		}
 	}
-	fmt.Println("loc.Name revErg >>", revErg, "<< ")
+	//	fmt.Println("loc.Name revErg >>", revErg, "<< ")
 	// reverse revErg
 	l = List{}
 	for j := len(revErg) - 1; 0 <= j; j-- {
 
 		l = append(l, revErg[j])
 	}
-	fmt.Println(" Erg l>>", l, "<< korr:", korrAnz)
+	fmt.Println(" improveEmail >>", l, "<< korr:", korrAnz)
 
 	return l, korrAnz
 }
