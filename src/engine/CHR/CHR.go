@@ -3330,31 +3330,38 @@ func traceCheckGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, o
 	e2t := f == "emailZuText"
 	t2e := f == "textZuEmail"
 	z2z := f == "ziffernZuZahl"
+	lenArgs := len(g1.Args)
 	// fmt.Println("b2t:", b2t, " t2b:", t2b, " e2t:", e2t, " t2e:", t2e)
 	if b2t || t2b || e2t || t2e || z2z {
-		if len(g1.Args) != 2 {
+		if !(lenArgs == 2 || (e2t && lenArgs == 3)) {
 			if len(g1.Args) < 2 {
 				// missing Arguments
 				Trace(1, ", missing Arguments: ", g1)
 			} else {
 				// to many Arguments
-				Trace(1, ", to many Arguments: ", g1)
+				Trace(1, ",(1) to many Arguments: ", g1, " (1)E2t: ", e2t, " lenArgs: ", lenArgs)
 			}
 			return env, false
 		}
 		v0 := g1.Args[0].Type() == VariableType
 		v1 := g1.Args[1].Type() == VariableType
-		if v0 && v1 {
+		v2 := true
+		if lenArgs == 3 {
+			v2 = g1.Args[2].Type() == VariableType
+		}
+		if (v0 && v1) || !v2 {
 			return env, false
 		}
-		var erg Term
+		var erg, erg2 Term
+		var korr int
 		if v1 {
 			if b2t {
 				erg, ok = Spell2text(Eval(g1.Args[0]))
 			} else if t2b {
 				erg, ok = Text2spell(Eval(g1.Args[0]))
 			} else if e2t {
-				erg, ok = Email2text(Eval(g1.Args[0]))
+				erg, korr, ok = Email2text(Eval(g1.Args[0]))
+				erg2 = Int(korr)
 			} else if t2e { // t2e
 				erg, ok = Text2email(Eval(g1.Args[0]))
 			} else { //z2z
@@ -3365,6 +3372,9 @@ func traceCheckGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, o
 				return env, ok
 			}
 			env2 = AddBinding(g1.Args[1].(Variable), erg, env)
+			if lenArgs == 3 {
+				env2 = AddBinding(g1.Args[2].(Variable), erg2, env2)
+			}
 			return env2, ok
 		}
 
@@ -3376,7 +3386,7 @@ func traceCheckGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, o
 			} else if e2t {
 				erg, ok = Text2email(Eval(g1.Args[1]))
 			} else { // t2e
-				erg, ok = Email2text(Eval(g1.Args[1]))
+				erg, _, ok = Email2text(Eval(g1.Args[1]))
 			}
 			if !ok {
 				return env, ok
@@ -3463,31 +3473,38 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 	e2t := f == "emailZuText"
 	t2e := f == "textZuEmail"
 	z2z := f == "ziffernZuZahl"
+	lenArgs := len(g1.Args)
 	// fmt.Println("b2t:", b2t, " t2b:", t2b, " e2t:", e2t, " t2e:", t2e)
 	if b2t || t2b || e2t || t2e || z2z {
-		if len(g1.Args) != 2 {
+		if !(lenArgs == 2 || (e2t && lenArgs == 3)) {
 			if len(g1.Args) < 2 {
 				// missing Arguments
 				Trace(1, ", missing Arguments: ", g1)
 			} else {
 				// to many Arguments
-				Trace(1, ", to many Arguments: ", g1)
+				Trace(1, ", (2) to many Arguments: ", g1, " (2) E2t: ", e2t, " lenArgs: ", lenArgs)
 			}
 			return env, false
 		}
 		v0 := g1.Args[0].Type() == VariableType
 		v1 := g1.Args[1].Type() == VariableType
-		if v0 && v1 {
+		v2 := true
+		if lenArgs == 3 {
+			v2 = g1.Args[2].Type() == VariableType
+		}
+		if (v0 && v1) || !v2 {
 			return env, false
 		}
-		var erg Term
+		var erg, erg2 Term
+		var korr int
 		if v1 {
 			if b2t {
 				erg, ok = Spell2text(Eval(g1.Args[0]))
 			} else if t2b {
 				erg, ok = Text2spell(Eval(g1.Args[0]))
 			} else if e2t {
-				erg, ok = Email2text(Eval(g1.Args[0]))
+				erg, korr, ok = Email2text(Eval(g1.Args[0]))
+				erg2 = Int(korr)
 			} else if t2e { // t2e
 				erg, ok = Text2email(Eval(g1.Args[0]))
 			} else { //z2z
@@ -3498,6 +3515,9 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 				return env, ok
 			}
 			env2 = AddBinding(g1.Args[1].(Variable), erg, env)
+			if lenArgs == 3 {
+				env2 = AddBinding(g1.Args[2].(Variable), erg2, env2)
+			}
 			return env2, ok
 		}
 
@@ -3509,7 +3529,7 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 			} else if e2t {
 				erg, ok = Text2email(Eval(g1.Args[1]))
 			} else { // t2e
-				erg, ok = Email2text(Eval(g1.Args[1]))
+				erg, _, ok = Email2text(Eval(g1.Args[1]))
 			}
 			if !ok {
 				return env, ok
