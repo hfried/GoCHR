@@ -688,7 +688,7 @@ var Char2SpellMap = map[rune]string{
 	'\\': "Umgekehrter Schrägstrich", '€': "Euro",
 	' ': "Leerzeichen"}
 
-var initSpell2CharMap = false
+var initSpellAndStructMap = false
 
 // Synonyme
 var Spell2CharMap = map[string]rune{
@@ -727,11 +727,27 @@ var Spell2WordsMap = map[string]map[string]rune{
 	"new":       {"york": 'N'},
 	"doppeltes": {"anführungszeichen": '"'}}
 
-func InitSpell2CharMap() {
+var Spell3WordsMap = map[string]map[string]map[string]rune{
+	"runde":        {"klammer": {"auf": '(', "zu": ')'}},
+	"geschweifte":  {"klammer": {"auf": '{', "zu": '}'}},
+	"geschwungene": {"klammer": {"auf": '{', "zu": '}'}},
+	"eckige":       {"klammer": {"auf": '[', "zu": ']'}},
+	"spitze":       {"klammer": {"auf": '<', "zu": '>'}},
+}
+
+func InitSpellAndStructMap() {
 	for runeVar, strVar := range Char2SpellMap {
 		Spell2CharMap[strings.ToLower(strVar)] = runeVar
 	}
-	initSpell2CharMap = true
+	for name, pu := range Punkt {
+		Struct1Word[name] = pu
+	}
+	for w1, str := range Punkt2Words {
+		for w2, name := range str {
+			Struct2Words[w1][w2] = name
+		}
+	}
+	initSpellAndStructMap = true
 }
 
 func selectOneRune(m map[string]rune, str string) rune {
@@ -750,8 +766,8 @@ func selectOneRune(m map[string]rune, str string) rune {
 
 func Spell2text(spell Term) (Term, bool) {
 	if spell.Type() == ListType {
-		if !initSpell2CharMap {
-			InitSpell2CharMap()
+		if !initSpellAndStructMap {
+			InitSpellAndStructMap()
 		}
 		spell3Words2rest := map[string]map[string]rune{}
 		spell3Words1rest := map[string]rune{}
@@ -871,8 +887,8 @@ func CheckSpellAndText(spell Term, text Term) bool {
 
 func Email2text(spell Term) (Term, int, bool) {
 	if spell.Type() == ListType {
-		if !initSpell2CharMap {
-			InitSpell2CharMap()
+		if !initSpellAndStructMap {
+			InitSpellAndStructMap()
 		}
 		// list := spell.(List)
 		list, korrAnz := improveEmail(spell.(List))
@@ -929,21 +945,37 @@ var TLD1WordMap = map[string]string{
 	"be":     "de",
 	"b":      "de",
 	"geh":    "de",
+	"e":      "de",
 	"net":    "net",
 	"org":    "org",
 	"ort":    "org",
+	"auch":   "org",
+	"bork":   "org",
 	"eu":     "eu"}
 
 var TLD2WordsMap = map[string]map[string]string{
-	"d": {"e": "de"},
-	"b": {"e": "de"},
+	"d":    {"e": "de"},
+	"b":    {"e": "de"},
+	"plus": {"t": "posteo"},
+	"da":   {"a": "de"},
 }
+
+var TLD3WordsMap = map[string]map[string]map[string]string{}
 
 var Punkt = map[string]string{
 	"punkt": "punkt",
 	"dot":   "punkt",
 	"und":   "punkt",
 	"um":    "punkt",
+	"dort":  "punkt",
+	"gott":  "punkt",
+	"doch":  "punkt",
+	"muss":  "punkt",
+	"bot":   "punkt",
+}
+
+var Punkt2Words = map[string]map[string]string{
+	"und": {"um": "punkt"},
 }
 
 var Et = map[string]string{
@@ -952,11 +984,32 @@ var Et = map[string]string{
 	"et":  "@",
 	"ed":  "@",
 	"and": "@",
+	"der": "@",
+	"und": "@",
+	"f":   "@",
+}
+
+var Struct1Word = map[string]string{
+	"bindestrich":  "bindestrich",
+	"minus":        "minus",
+	"unterstrich":  "unterstrich",
+	"unterbricht":  "unterstrich",
+	"strich":       "strich",
+	"unterschrift": "unterstrich",
+	"mine":         "minus",
+}
+
+var Struct2Words = map[string]map[string]string{
+	"bin": {"ich": "bindestrich"},
+	"und": {"das": "unterstrich",
+		"der": "unterstrich",
+		"ich": "unterstrich"},
 }
 
 // Maps 4 Hostname
 var HN1WordMap = map[string]string{
 	"mailbox":    "mailbox",
+	"inbox":      "mailbox",
 	"posteo":     "posteo",
 	"mail":       "mail",
 	"gmx":        "gmx",
@@ -969,36 +1022,41 @@ var HN1WordMap = map[string]string{
 	"aol":        "aol",
 }
 
-var HN2WordMap = map[string]map[string]string{
+var HN2WordsMap = map[string]map[string]string{
 	"t":      {"online": "t-online"},
+	"die":    {"online": "t-online"},
 	"de":     {"online": "t-online"},
 	"mail":   {"box": "mailbox"},
-	"post":   {"theo": "posteo"},
-	"kost":   {"theo": "posteo"},
+	"post":   {"t": "posteo", "theo": "posteo", "rio": "posteo"},
+	"kost":   {"t": "posteo", "theo": "posteo", "rio": "posteo"},
+	"plus":   {"t": "posteo"},
 	"google": {"mail": "googlemail"},
+	"dem":    {"ex": "gmx"},
 }
+
+var HN3WordsMap = map[string]map[string]map[string]string{
+	"post": {"d": {"o": "posteo"},
+		"e": {"o": "posteo"}}}
 
 //@ Hotname
 var EtHN1Word = map[string]string{
-	"etwa":    "web",
-	"erklärt": "web",
+	"etwa":     "web",
+	"erklärt":  "web",
+	"entweder": "mail",
 }
 
-var Spell3WordsMap = map[string]map[string]map[string]rune{
-	"runde":        {"klammer": {"auf": '(', "zu": ')'}},
-	"geschweifte":  {"klammer": {"auf": '{', "zu": '}'}},
-	"geschwungene": {"klammer": {"auf": '{', "zu": '}'}},
-	"eckige":       {"klammer": {"auf": '[', "zu": ']'}},
-	"spitze":       {"klammer": {"auf": '<', "zu": '>'}},
+var EtHN2Words = map[string]map[string]string{
+	"etwa": {"günter": "magenta",
+		"agenta": "magenta",
+		"agenda": "magenta"},
 }
-
 var StructEle = map[string]bool{
 	"bindestrich": true,
 	"minus":       true,
 	"unterstrich": true,
 	"strich":      true,
 	"punkt":       true,
-	"dot":         true,
+	//	"dot":         true,
 }
 
 func improveEmail(l List) (List, int) {
@@ -1011,6 +1069,7 @@ func improveEmail(l List) (List, int) {
 	rl := List{}
 	// split strings to sl and rest in rl
 	// sb[i] == true if sl[i] == type string
+	w1, w2, s1, ok := "", "", map[string]string{}, false
 	for _, ele := range l {
 		if ele.Type() == StringType {
 			s := ele.(String)
@@ -1023,6 +1082,35 @@ func improveEmail(l List) (List, int) {
 				continue
 			}
 			str = strings.ToLower(str[1 : l-1])
+			if w1 != "" {
+				w2, ok = s1[str]
+				if ok {
+					fmt.Println("W1: ", w1, "+W2: ", str, " ==> ", w2)
+					sl = append(sl, w2)
+					sb = append(sb, true)
+					rl = append(rl, ele)
+					w1 = ""
+					continue
+				} else {
+					sl = append(sl, w1)
+					sb = append(sb, true)
+					rl = append(rl, ele)
+				}
+				w1 = ""
+			}
+			s1, ok = Struct2Words[str]
+			if ok {
+				fmt.Println("W1: ", str, "S1: ", s1)
+				w1 = str
+				continue
+			}
+			w2, ok = Struct1Word[str]
+			if ok {
+				sl = append(sl, w2)
+				sb = append(sb, true)
+				rl = append(rl, ele)
+				continue
+			}
 			sl = append(sl, str)
 			sb = append(sb, true)
 			rl = append(rl, ele)
@@ -1031,32 +1119,34 @@ func improveEmail(l List) (List, int) {
 			sl = append(sl, "")
 			sb = append(sb, false)
 			rl = append(rl, ele)
+			w1 = ""
 		}
 	}
-	//	fmt.Println("sl>>", sl, "<<")
-	//	fmt.Println("sb>>", sb, "<<")
-	//	fmt.Println("rl>>", rl, "<<")
+	fmt.Println("sl>>", sl, "<<")
+	fmt.Println("sb>>", sb, "<<")
+	fmt.Println("rl>>", rl, "<<")
 
 	revErg := List{}
 	// search Top-Level-Domain
 	idx := len(sl) - 1
-	if !sb[idx] {
+	if !sb[idx] || idx < 2 {
 		return l, 5
 	}
 
-	tld, ok := TLD1WordMap[sl[idx]]
+	tld1, ok1 := TLD1WordMap[sl[idx]]
+	tld2, ok2 := TLD2WordsMap[sl[idx-1]][sl[idx]]
+	tld3, ok3 := TLD3WordsMap[sl[idx-2]][sl[idx-1]][sl[idx]]
 
-	if ok {
-		revErg = List{String(tld)}
-		idx--
+	if ok3 {
+		revErg = List{String(tld3)}
+		idx -= 3
+	} else if ok2 {
+		revErg = List{String(tld2)}
+		idx -= 2
 	} else {
-		if !sb[idx-1] {
-			return l, 5
-		}
-		tld, ok := TLD2WordsMap[sl[idx-1]][sl[idx]]
-		if ok {
-			revErg = List{String(tld)}
-			idx -= 2
+		if ok1 {
+			revErg = List{String(tld1)}
+			idx--
 		} else {
 			revErg = List{String("de")}
 			korrAnz++
@@ -1076,10 +1166,14 @@ func improveEmail(l List) (List, int) {
 	etFound := false
 	if sb[idx] {
 		hn1, ok1 := HN1WordMap[sl[idx]]
-		hn2, ok2 := HN2WordMap[sl[idx-1]][sl[idx]]
+		hn2, ok2 := HN2WordsMap[sl[idx-1]][sl[idx]]
+		hn3, ok3 := HN3WordsMap[sl[idx-2]][sl[idx-1]][sl[idx]]
 		//		fmt.Println("HN2Word aus: ", sl[idx-1], sl[idx], " wird: ", hn2)
-		if ok1 || ok2 {
-			if ok2 {
+		if ok1 || ok2 || ok3 {
+			if ok3 {
+				revErg = append(revErg, String(hn3))
+				idx -= 3
+			} else if ok2 {
 				revErg = append(revErg, String(hn2))
 				idx -= 2
 			} else if ok1 {
@@ -1095,10 +1189,16 @@ func improveEmail(l List) (List, int) {
 			revErg = append(revErg, String("@"))
 			etFound = true
 		} else {
-			hn, ok := EtHN1Word[sl[idx]]
-			if ok {
-				idx--
-				revErg = append(revErg, String(hn))
+			hn1, ok1 = EtHN1Word[sl[idx]]
+			hn2, ok2 = EtHN2Words[sl[idx-1]][sl[idx]]
+			if ok1 || ok2 {
+				if ok2 {
+					idx -= 2
+					revErg = append(revErg, String(hn2))
+				} else {
+					idx--
+					revErg = append(revErg, String(hn1))
+				}
 				revErg = append(revErg, String("@"))
 				etFound = true
 				korrAnz++
@@ -1191,8 +1291,8 @@ func improveEmail(l List) (List, int) {
 
 func ZiffernZuZahl(spell Term) (Term, bool) {
 	if spell.Type() == ListType {
-		if !initSpell2CharMap {
-			InitSpell2CharMap()
+		if !initSpellAndStructMap {
+			InitSpellAndStructMap()
 		}
 
 		list := spell.(List)
