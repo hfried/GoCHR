@@ -1166,8 +1166,14 @@ func improveEmail(l List) (List, int) {
 	etFound := false
 	if sb[idx] {
 		hn1, ok1 := HN1WordMap[sl[idx]]
-		hn2, ok2 := HN2WordsMap[sl[idx-1]][sl[idx]]
-		hn3, ok3 := HN3WordsMap[sl[idx-2]][sl[idx-1]][sl[idx]]
+		hn2, ok2 := "", false
+		if idx > 0 {
+			hn2, ok2 = HN2WordsMap[sl[idx-1]][sl[idx]]
+		}
+		hn3, ok3 := "", false
+		if idx > 1 {
+			hn3, ok3 = HN3WordsMap[sl[idx-2]][sl[idx-1]][sl[idx]]
+		}
 		//		fmt.Println("HN2Word aus: ", sl[idx-1], sl[idx], " wird: ", hn2)
 		if ok1 || ok2 || ok3 {
 			if ok3 {
@@ -1190,7 +1196,10 @@ func improveEmail(l List) (List, int) {
 			etFound = true
 		} else {
 			hn1, ok1 = EtHN1Word[sl[idx]]
-			hn2, ok2 = EtHN2Words[sl[idx-1]][sl[idx]]
+			ok2 = false
+			if idx > 0 {
+				hn2, ok2 = EtHN2Words[sl[idx-1]][sl[idx]]
+			}
 			if ok1 || ok2 {
 				if ok2 {
 					idx -= 2
