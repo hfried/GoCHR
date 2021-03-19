@@ -1085,7 +1085,7 @@ func improveEmail(l List) (List, int) {
 			if w1 != "" {
 				w2, ok = s1[str]
 				if ok {
-					fmt.Println("W1: ", w1, "+W2: ", str, " ==> ", w2)
+					// fmt.Println("W1: ", w1, "+W2: ", str, " ==> ", w2)
 					sl = append(sl, w2)
 					sb = append(sb, true)
 					rl = append(rl, ele)
@@ -1100,7 +1100,7 @@ func improveEmail(l List) (List, int) {
 			}
 			s1, ok = Struct2Words[str]
 			if ok {
-				fmt.Println("W1: ", str, "S1: ", s1)
+				// fmt.Println("W1: ", str, "S1: ", s1)
 				w1 = str
 				continue
 			}
@@ -1122,9 +1122,9 @@ func improveEmail(l List) (List, int) {
 			w1 = ""
 		}
 	}
-	fmt.Println("sl>>", sl, "<<")
-	fmt.Println("sb>>", sb, "<<")
-	fmt.Println("rl>>", rl, "<<")
+	// fmt.Println("sl>>", sl, "<<")
+	// fmt.Println("sb>>", sb, "<<")
+	// fmt.Println("rl>>", rl, "<<")
 
 	revErg := List{}
 	// search Top-Level-Domain
@@ -1293,7 +1293,7 @@ func improveEmail(l List) (List, int) {
 
 		l = append(l, revErg[j])
 	}
-	fmt.Println(" improveEmail >>", l, "<< korr:", korrAnz)
+	// fmt.Println(" improveEmail >>", l, "<< korr:", korrAnz)
 
 	return l, korrAnz
 }
