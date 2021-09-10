@@ -3363,7 +3363,7 @@ func traceCheckGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, o
 				erg, korr, ok = Email2text(Eval(g1.Args[0]))
 				erg2 = Int(korr)
 			} else if t2e { // t2e
-				erg, ok = Text2email(Eval(g1.Args[0]))
+				erg, erg2, ok = Text2email(Eval(g1.Args[0]))
 			} else { //z2z
 				erg, ok = ZiffernZuZahl(Eval(g1.Args[0]))
 			}
@@ -3384,7 +3384,7 @@ func traceCheckGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, o
 			} else if t2b {
 				erg, ok = Spell2text(Eval(g1.Args[1]))
 			} else if e2t {
-				erg, ok = Text2email(Eval(g1.Args[1]))
+				erg, _, ok = Text2email(Eval(g1.Args[1]))
 			} else { // t2e
 				erg, _, ok = Email2text(Eval(g1.Args[1]))
 			}
@@ -3476,7 +3476,7 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 	lenArgs := len(g1.Args)
 	// fmt.Println("b2t:", b2t, " t2b:", t2b, " e2t:", e2t, " t2e:", t2e)
 	if b2t || t2b || e2t || t2e || z2z {
-		if !(lenArgs == 2 || (e2t && lenArgs == 3)) {
+		if !(lenArgs == 2 || ((e2t || t2e) && lenArgs == 3)) {
 			if len(g1.Args) < 2 {
 				// missing Arguments
 				Trace(1, ", missing Arguments: ", g1)
@@ -3506,7 +3506,7 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 				erg, korr, ok = Email2text(Eval(g1.Args[0]))
 				erg2 = Int(korr)
 			} else if t2e { // t2e
-				erg, ok = Text2email(Eval(g1.Args[0]))
+				erg, erg2, ok = Text2email(Eval(g1.Args[0]))
 			} else { //z2z
 				erg, ok = ZiffernZuZahl(Eval(g1.Args[0]))
 			}
@@ -3527,7 +3527,7 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 			} else if t2b {
 				erg, ok = Spell2text(Eval(g1.Args[1]))
 			} else if e2t {
-				erg, ok = Text2email(Eval(g1.Args[1]))
+				erg, _, ok = Text2email(Eval(g1.Args[1]))
 			} else { // t2e
 				erg, _, ok = Email2text(Eval(g1.Args[1]))
 			}

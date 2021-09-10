@@ -1020,6 +1020,7 @@ var HN1WordMap = map[string]string{
 	"web":        "web",
 	"magenta":    "magenta",
 	"aol":        "aol",
+	"live":       "live",
 }
 
 var HN2WordsMap = map[string]map[string]string{
@@ -1337,14 +1338,14 @@ func ZiffernZuZahl(spell Term) (Term, bool) {
 	return spell, false
 }
 
-func Text2email(text Term) (Term, bool) {
+func Text2email(text Term) (Term, Term, bool) {
 	var spell List
 	if text.Type() == StringType {
 		str := text.(String)
 		// fmt.Println("Str:", str)
 		l := len(str)
 		if l < 3 {
-			return spell, false
+			return spell, spell, false
 		}
 		str = str[1 : l-1]
 		substr := ""
@@ -1367,10 +1368,10 @@ func Text2email(text Term) (Term, bool) {
 		if substr != "" {
 			spell = append(spell, String(substr))
 		}
-		return list2sstring(spell), true
+		return list2sstring(spell), list2stringList(spell), true
 		// return list2cstring(spell), true
 	}
-	return spell, false
+	return spell, spell, false
 }
 
 func list2cstring(list Term) Term {
@@ -1411,6 +1412,22 @@ func list2sstring(list Term) Term {
 		}
 		text = "\"" + text + "\""
 		return String(text)
+	}
+	return list
+}
+
+func list2stringList(list Term) Term {
+	var spell List
+	if list.Type() == ListType {
+		l := list.(List)
+		for _, ele := range l {
+			if ele.Type() == StringType {
+				s := ele.(String)
+				str := string(s)
+				spell = append(spell, String("\""+str+"\""))
+			}
+		}
+		return spell
 	}
 	return list
 }
