@@ -3499,6 +3499,7 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 		var korr int
 		if v1 {
 			if b2t {
+				// fmt.Println("#### Start buchstabiertZuText")
 				erg, ok = Spell2text(Eval(g1.Args[0]))
 			} else if t2b {
 				erg, ok = Text2spell(Eval(g1.Args[0]))

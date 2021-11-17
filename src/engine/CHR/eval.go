@@ -811,15 +811,16 @@ func Spell2text(spell Term) (Term, bool) {
 							} else {
 								// "ch..." oder "Ch..."
 								if (str[0] == 'c' || str[0] == 'C') && l > 3 && str[1] == 'h' {
-									if str == "Charly" || str == "Charlie" {
-										text += String("C")
+									// fmt.Println(" ########### str:", str)
+									if str == "chemnitz" || str == "charlotte" || str == "chiasso" {
+										text += String("ch")
 									} else {
-										text += String("CH")
+										text += String("c")
 									}
 									continue
 								}
 								if (str[0] == 'S' || str[0] == 's') && l > 4 && str[1] == 'c' && str[2] == 'h' {
-									text += String("SCH")
+									text += String("sch")
 									continue
 								}
 								text += String(first) // main case: the first letter
