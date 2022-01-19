@@ -772,6 +772,7 @@ func Spell2text(spell Term) (Term, bool) {
 		spell3Words2rest := map[string]map[string]rune{}
 		spell3Words1rest := map[string]rune{}
 		spell2Words1rest := map[string]rune{}
+		var rune1of3, rune2of3, rune1of2 rune
 		list := spell.(List)
 		var text String
 		var r rune
@@ -792,17 +793,20 @@ func Spell2text(spell Term) (Term, bool) {
 					first = ru
 					break
 				}
+
 				if len(spell3Words1rest) == 0 {
 					if len(spell3Words2rest) == 0 {
 						if len(spell2Words1rest) == 0 {
 							spell3Words2rest, ok = Spell3WordsMap[str]
 							if ok {
 								// fmt.Println("Spell 3 WordsMap OK:", str)
+								rune1of3 = first
 								continue
 							}
 							spell2Words1rest, ok = Spell2WordsMap[str]
 							if ok {
 								// fmt.Println("Spell 2 WordsMap OK:", str)
+								rune1of2 = first
 								continue
 							}
 							r, ok = Spell2CharMap[str]
@@ -827,17 +831,33 @@ func Spell2text(spell Term) (Term, bool) {
 							}
 						} else { // len(spell2Words1rest) > 0
 							// fmt.Println("in spell 2 Words 1 rest")
-							text += String(selectOneRune(spell2Words1rest, str))
+							r, ok = spell2Words1rest[str]
+							if ok {
+								text += String(r)
+							} else {
+								text += String(rune1of2)
+								text += String(first)
+							}
+							// text += String(selectOneRune(spell2Words1rest, str))
 							spell2Words1rest = map[string]rune{}
 						}
 					} else { // len(spell3Words2rest) > 0
 						// fmt.Println("Klammer = ", str)
-						spell3Words1rest = spell3Words2rest["Klammer"]
+						// spell3Words1rest, ok = spell3Words2rest[str]
+						spell3Words1rest = spell3Words2rest["klammer"]
+						rune2of3 = first
 						spell3Words2rest = map[string]map[string]rune{}
 					}
 				} else { // len(spell3Words1rest) > 0
 					// fmt.Println("in spell 3 Words 1 rest")
-					text += String(selectOneRune(spell3Words1rest, str))
+					r, ok = spell3Words1rest[str]
+					if ok {
+						text += String(r)
+					} else {
+						text += String(rune1of3)
+						text += String(rune2of3)
+						text += String(first)
+					}
 					spell3Words1rest = map[string]rune{}
 				}
 			} else if ele.Type() == CompoundType {
@@ -1084,6 +1104,22 @@ func improveEmail(l List) (List, int) {
 				continue
 			}
 			str = strings.ToLower(str[1 : l-1])
+			str1 := ""
+			for _, char := range str {
+				switch char {
+				case 'ä':
+					str1 += "ae"
+				case 'ö':
+					str1 += "oe"
+				case 'ü':
+					str1 += "ue"
+				case 'ß':
+					str1 += "sz"
+				default:
+					str1 += string(char)
+				}
+			}
+			str = str1
 			if w1 != "" {
 				w2, ok = s1[str]
 				if ok {
