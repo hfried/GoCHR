@@ -1155,22 +1155,24 @@ func improveEmail(l List) (List, int) {
 				continue
 			}
 			str = strings.ToLower(str[1 : l-1])
-			str1 := ""
-			for _, char := range str {
-				switch char {
-				case 'ä':
-					str1 += "ae"
-				case 'ö':
-					str1 += "oe"
-				case 'ü':
-					str1 += "ue"
-				case 'ß':
-					str1 += "sz"
-				default:
-					str1 += string(char)
+			if str != "ät" {
+				str1 := ""
+				for _, char := range str {
+					switch char {
+					case 'ä':
+						str1 += "ae"
+					case 'ö':
+						str1 += "oe"
+					case 'ü':
+						str1 += "ue"
+					case 'ß':
+						str1 += "sz"
+					default:
+						str1 += string(char)
+					}
 				}
+				str = str1
 			}
-			str = str1
 			if w1 != "" {
 				w2, ok = s1[str]
 				if ok {
