@@ -1023,7 +1023,8 @@ var TLD1WordMap = map[string]string{
 	"sm":   "sm",
 	"ua":   "ua",
 	"uk":   "uk",
-	"va":   "va"}
+	"va":   "va",
+	" ":    " "}
 
 var TLD2WordsMap = map[string]map[string]string{
 	"d":    {"e": "de"},
