@@ -3330,9 +3330,10 @@ func traceCheckGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, o
 	e2t := f == "emailZuText"
 	t2e := f == "textZuEmail"
 	z2z := f == "ziffernZuZahl"
+	t2l := f == "textZuListe" // "abc-d" --> ["a","b","c","-","d"]
 	lenArgs := len(g1.Args)
 	// fmt.Println("b2t:", b2t, " t2b:", t2b, " e2t:", e2t, " t2e:", t2e)
-	if b2t || t2b || e2t || t2e || z2z {
+	if b2t || t2b || e2t || t2e || z2z || t2l {
 		if !(lenArgs == 2 || (e2t && lenArgs == 3)) {
 			if len(g1.Args) < 2 {
 				// missing Arguments
@@ -3469,13 +3470,14 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 	}
 
 	b2t := f == "buchstabiertZuText" || f == "spell2text"
-	t2b := f == "textZuBuchstabiert" || f == "text2spell"
+	t2b := f == "textZuBuchstabiert" || f == "text2spell" // "abc-d" --> ["a","b","c","Bindestrich","d"]
 	e2t := f == "emailZuText"
 	t2e := f == "textZuEmail"
 	z2z := f == "ziffernZuZahl"
+	t2l := f == "textZuListe" || f == "text2list" // "abc-d" --> ["a","b","c","-","d"]
 	lenArgs := len(g1.Args)
 	// fmt.Println("b2t:", b2t, " t2b:", t2b, " e2t:", e2t, " t2e:", t2e)
-	if b2t || t2b || e2t || t2e || z2z {
+	if b2t || t2b || e2t || t2e || z2z || t2l {
 		if !(lenArgs == 2 || ((e2t || t2e) && lenArgs == 3)) {
 			if len(g1.Args) < 2 {
 				// missing Arguments
@@ -3503,6 +3505,8 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 				erg, ok = Spell2text(Eval(g1.Args[0]))
 			} else if t2b {
 				erg, ok = Text2spell(Eval(g1.Args[0]))
+			} else if t2l {
+				erg, ok = Text2list(Eval(g1.Args[0]))
 			} else if e2t {
 				erg, korr, ok = Email2text(Eval(g1.Args[0]))
 				erg2 = Int(korr)

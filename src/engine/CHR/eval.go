@@ -901,6 +901,30 @@ func Text2spell(text Term) (Term, bool) {
 	return spell, false
 }
 
+func Text2list(text Term) (Term, bool) {
+	var spell List
+	if text.Type() == StringType {
+		str := text.(String)
+		// fmt.Println("Str:", str)
+		l := len(str)
+		if l < 3 {
+			return spell, false
+		}
+		str = str[1 : l-1]
+		for _, ele := range str {
+
+			// s, ok := Char2SpellMap[ele]
+			//	if !ok {
+			s := string(ele)
+			//}
+			spell = append(spell, String("\""+s+"\""))
+		}
+		return spell, true
+		// return list2cstring(spell), true
+	}
+	return spell, false
+}
+
 func CheckSpellAndText(spell Term, text Term) bool {
 	//if text.Type
 	return false
@@ -969,6 +993,7 @@ var TLD1WordMap = map[string]string{
 	"e":    "de",
 	"net":  "net",
 	"org":  "org",
+	"or":   "org",
 	"ort":  "org",
 	"auch": "org",
 	"bork": "org",
@@ -1024,7 +1049,31 @@ var TLD1WordMap = map[string]string{
 	"ua":   "ua",
 	"uk":   "uk",
 	"va":   "va",
-	" ":    " "}
+	" ":    " ",
+	"a":    "ba",
+	"c":    "de",
+	"f":    "fr",
+	"g":    "de",
+	"h":    "hr",
+	"i":    "fi",
+	"j":    "je",
+	"k":    "dk",
+	"l":    "nl",
+	"m":    "com",
+	"n":    "nl",
+	"o":    "com",
+	"p":    "pl",
+	"q":    "eu",
+	"r":    "fr",
+	"s":    "es",
+	"t":    "net",
+	"u":    "eu",
+	"v":    "lv",
+	"w":    "de",
+	"x":    "ax",
+	"y":    "by",
+	"z":    "cz",
+}
 
 var TLD2WordsMap = map[string]map[string]string{
 	"d":    {"e": "de"},
