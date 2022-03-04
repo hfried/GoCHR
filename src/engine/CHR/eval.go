@@ -727,6 +727,33 @@ var Spell2WordsMap = map[string]map[string]rune{
 	"new":       {"york": 'N'},
 	"doppeltes": {"anführungszeichen": '"'}}
 
+var Spell2CharNameMap = map[string]rune{
+	"minus": '-', "minuszeichen": '-', "strich": '-', "bindestrich": '-',
+	"apostroph":   '\'',
+	"leerzeichen": ' ', "space": ' ', "zwischenraum": ' ',
+	"leerstelle": ' ',
+	// fFlLmMnNrRsS
+
+	"ah": 'A', "be": 'B', "zeh": 'C', "de": 'D', "eh": 'E',
+	"ef": 'F', "geh": 'G', "ha": 'H', "ie": 'I', "jot": 'J',
+	"ka": 'K', "el": 'L', "em": 'M', "en": 'N', "oh": 'O', "pe": 'P', "kuh": 'Q', "qu": 'Q',
+	"er": 'R', "es": 'S', "tee": 't', "uh": 'U', "Pfau": 'V', "weh": 'W',
+	"ixs": 'x', "ysilon": 'y', "zet": 'Z'}
+
+var Spell2CharNameNumberMap = map[string]rune{
+	"ah": 'A', "be": 'B', "zeh": 'C', "de": 'D', "eh": 'E',
+	"ef": 'F', "geh": 'G', "ha": 'H', "ie": 'I', "jot": 'J',
+	"ka": 'K', "el": 'L', "em": 'M', "en": 'N', "oh": 'O', "pe": 'P', "kuh": 'Q', "qu": 'Q',
+	"er": 'R', "es": 'S', "tee": 't', "uh": 'U', "Pfau": 'V', "weh": 'W',
+	"ixs": 'x', "ysilon": 'y', "zet": 'Z'}
+
+var Spell2WordsNameMap = map[string]map[string]rune{
+	"accent":   {"aigu": '´', "akut": '´', "grave": '`', "gravis": '`'},
+	"akzent":   {"aigu": '´', "akut": '´', "grave": '`', "gravis": '`'},
+	"scharfes": {"es": 'ß', "s": 'ß', "S": 'ß', "Es": 'ß'},
+	"es":       {"zet": 'ß', "z": 'ß'},
+	"new":      {"york": 'N'}}
+
 var Spell3WordsMap = map[string]map[string]map[string]rune{
 	"runde":        {"klammer": {"auf": '(', "zu": ')'}},
 	"geschweifte":  {"klammer": {"auf": '{', "zu": '}'}},
@@ -863,10 +890,159 @@ func Spell2text(spell Term) (Term, bool) {
 			} else if ele.Type() == CompoundType {
 				comp := ele.(Compound)
 				// fmt.Println("  ############# Functor: >", comp.Functor, "< #########")
-				if comp.Functor == "zahl" {
+				//				if comp.Functor == "zahl" {
+				if comp.Functor[0] == 'z' || comp.Functor[1] == 'a' || comp.Functor[2] == 'h' || comp.Functor[3] == 'l' {
 					text = text + String(fmt.Sprint(comp.Args[0]))
 				} else if len(comp.Args) > 1 && comp.Args[1].Type() == StringType {
 					text = text + String(comp.Args[1].(String)[0])
+				}
+			}
+		}
+		text = "\"" + text + "\""
+		return text, true
+	}
+	return spell, false
+}
+
+func Spell2name(spell Term) (Term, bool) {
+	if spell.Type() == ListType {
+		spell2Words1rest := map[string]rune{}
+		var rune1of2 rune
+		list := spell.(List)
+		var text String
+		var r rune
+		var first rune
+		var ok bool
+		for _, ele := range list {
+			if ele.Type() == StringType {
+				s := ele.(String)
+				str := string(s)
+				// fmt.Println("String ", idx, "=", str)
+
+				l := len(str)
+				if l < 3 {
+					continue
+				}
+				str = strings.ToLower(str[1 : l-1])
+				for _, ru := range str {
+					first = ru
+					break
+				}
+				if len(spell2Words1rest) == 0 {
+					spell2Words1rest, ok = Spell2WordsNameMap[str]
+					if ok {
+						// fmt.Println("Spell 2 WordsNameMap OK:", str)
+						rune1of2 = first
+						continue
+					}
+					r, ok = Spell2CharNameMap[str]
+					if ok {
+						text += String(r)
+					} else {
+						// "ch..." oder "Ch..."
+						if (str[0] == 'c' || str[0] == 'C') && l > 3 && str[1] == 'h' {
+							// fmt.Println(" ########### str:", str)
+							if str == "chemnitz" || str == "charlotte" || str == "chiasso" {
+								text += String("ch")
+							} else {
+								text += String("c")
+							}
+							continue
+						}
+						if (str[0] == 'S' || str[0] == 's') && l > 4 && str[1] == 'c' && str[2] == 'h' {
+							text += String("sch")
+							continue
+						}
+						text += String(first) // main case: the first letter
+					}
+				} else { // len(spell2Words1rest) > 0
+					// fmt.Println("in spell 2 Words 1 rest")
+					r, ok = spell2Words1rest[str]
+					if ok {
+						text += String(r)
+					} else {
+						text += String(rune1of2)
+						text += String(first)
+					}
+					// text += String(selectOneRune(spell2Words1rest, str))
+					spell2Words1rest = map[string]rune{}
+				}
+			} else if ele.Type() == CompoundType {
+				comp := ele.(Compound)
+				// fmt.Println("  ############# Functor: >", comp.Functor, "< #########")
+				//				if comp.Functor == "zahl" {
+				//				if comp.Functor[0] == 'z' || comp.Functor[1] == 'a' || comp.Functor[2] == 'h' || comp.Functor[3] == 'l' {
+				//					text = text + String(fmt.Sprint(comp.Args[0]))
+				if len(comp.Args) == 1 && comp.Args[0].Type() == StringType &&
+					len(comp.Args[0].(String)) > 2 {
+					text = text + String(comp.Args[0].(String)[1])
+				} else if len(comp.Args) > 1 && comp.Args[1].Type() == StringType &&
+					len(comp.Args[1].(String)) > 2 {
+					text = text + String(comp.Args[1].(String)[1])
+				}
+
+			}
+		}
+		text = "\"" + text + "\""
+		return text, true
+	}
+	return spell, false
+}
+
+func Spell2namenumber(spell Term) (Term, bool) {
+	if spell.Type() == ListType {
+		list := spell.(List)
+		var text String
+		var first rune
+		for _, ele := range list {
+			if ele.Type() == StringType {
+				s := ele.(String)
+				str := string(s)
+				// fmt.Println("String ", idx, "=", str)
+
+				l := len(str)
+				if l < 3 {
+					continue
+				}
+				str = strings.ToLower(str[1 : l-1])
+				for _, ru := range str {
+					first = ru
+					break
+				}
+				r, ok := Spell2CharNameNumberMap[str]
+				if ok {
+					text += String(r)
+					continue
+				} else {
+					// "ch..." oder "Ch..."
+					// "ch..." oder "Ch..."
+					if (str[0] == 'c' || str[0] == 'C') && l > 3 && str[1] == 'h' {
+						// fmt.Println(" ########### str:", str)
+						if str == "chemnitz" || str == "charlotte" || str == "chiasso" {
+							text += String("ch")
+						} else {
+							text += String("c")
+						}
+						continue
+					}
+					if (str[0] == 'S' || str[0] == 's') && l > 4 && str[1] == 'c' && str[2] == 'h' {
+						text += String("sch")
+						continue
+					}
+				}
+				text += String(first) // main case: the first letter
+			} else if ele.Type() == CompoundType {
+				comp := ele.(Compound)
+				// fmt.Println("  ############# Functor: >", comp.Functor, "< #########")
+				//				if comp.Functor == "zahl" {
+				if comp.Functor[0] == 'z' || comp.Functor[1] == 'a' || comp.Functor[2] == 'h' || comp.Functor[3] == 'l' {
+					text = text + String(fmt.Sprint(comp.Args[0]))
+				} else if len(comp.Args) == 1 && comp.Args[0].Type() == StringType &&
+					len(comp.Args[0].(String)) > 2 {
+					text = text + String(comp.Args[0].(String)[1])
+				} else if len(comp.Args) > 1 && comp.Args[1].Type() == StringType &&
+					len(comp.Args[1].(String)) > 2 {
+					text = text + String(comp.Args[1].(String)[1])
 				}
 
 			}
@@ -961,7 +1137,8 @@ func Email2text(spell Term) (Term, int, bool) {
 			} else if ele.Type() == CompoundType {
 				comp := ele.(Compound)
 				// fmt.Println("  ############# Functor: >", comp.Functor, "< #########")
-				if comp.Functor == "zahl" {
+				//				if comp.Functor == "zahl" {
+				if comp.Functor[0] == 'z' || comp.Functor[1] == 'a' || comp.Functor[2] == 'h' || comp.Functor[3] == 'l' {
 					text = text + String(fmt.Sprint(comp.Args[0]))
 				} else if len(comp.Args) > 1 && comp.Args[1].Type() == StringType {
 					s := comp.Args[1].(String)
@@ -1467,7 +1644,8 @@ func ZiffernZuZahl(spell Term) (Term, bool) {
 			} else if ele.Type() == CompoundType {
 				comp := ele.(Compound)
 				// fmt.Println("  ############# Functor: >", comp.Functor, "< #########")
-				if comp.Functor == "zahl" {
+				//				if comp.Functor == "zahl" {
+				if comp.Functor[0] == 'z' || comp.Functor[1] == 'a' || comp.Functor[2] == 'h' || comp.Functor[3] == 'l' {
 					zahl = zahl + String(fmt.Sprint(comp.Args[0]))
 				}
 			}

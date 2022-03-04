@@ -3326,6 +3326,8 @@ func traceCheckGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, o
 	}
 
 	b2t := f == "buchstabiertZuText" || f == "spell2text"
+	b2n := f == "buchstabiertZuName"
+	b2bz := f == "buchstabiertZuBuchstabenZahlen"
 	t2b := f == "textZuBuchstabiert" || f == "text2spell"
 	e2t := f == "emailZuText"
 	t2e := f == "textZuEmail"
@@ -3333,7 +3335,7 @@ func traceCheckGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, o
 	t2l := f == "textZuListe" // "abc-d" --> ["a","b","c","-","d"]
 	lenArgs := len(g1.Args)
 	// fmt.Println("b2t:", b2t, " t2b:", t2b, " e2t:", e2t, " t2e:", t2e)
-	if b2t || t2b || e2t || t2e || z2z || t2l {
+	if b2t || b2n || b2bz || t2b || e2t || t2e || z2z || t2l {
 		if !(lenArgs == 2 || (e2t && lenArgs == 3)) {
 			if len(g1.Args) < 2 {
 				// missing Arguments
@@ -3358,8 +3360,14 @@ func traceCheckGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, o
 		if v1 {
 			if b2t {
 				erg, ok = Spell2text(Eval(g1.Args[0]))
+			} else if b2n {
+				erg, ok = Spell2name(Eval(g1.Args[0]))
+			} else if b2bz {
+				erg, ok = Spell2namenumber(Eval(g1.Args[0]))
 			} else if t2b {
 				erg, ok = Text2spell(Eval(g1.Args[0]))
+			} else if t2l {
+				erg, ok = Text2list(Eval(g1.Args[0]))
 			} else if e2t {
 				erg, korr, ok = Email2text(Eval(g1.Args[0]))
 				erg2 = Int(korr)
@@ -3380,7 +3388,7 @@ func traceCheckGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, o
 		}
 
 		if v0 {
-			if b2t {
+			if b2t || b2n || b2bz {
 				erg, ok = Text2spell(Eval(g1.Args[1]))
 			} else if t2b {
 				erg, ok = Spell2text(Eval(g1.Args[1]))
@@ -3397,7 +3405,7 @@ func traceCheckGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, o
 		}
 
 		// arg0 und arg1 sind Werte
-		if b2t {
+		if b2t || b2n || b2bz {
 			return env, CheckSpellAndText(Eval(g1.Args[0]), Eval(g1.Args[1]))
 		}
 		if t2b {
@@ -3470,6 +3478,8 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 	}
 
 	b2t := f == "buchstabiertZuText" || f == "spell2text"
+	b2n := f == "buchstabiertZuName"
+	b2bz := f == "buchstabiertZuBuchstabenZahlen"
 	t2b := f == "textZuBuchstabiert" || f == "text2spell" // "abc-d" --> ["a","b","c","Bindestrich","d"]
 	e2t := f == "emailZuText"
 	t2e := f == "textZuEmail"
@@ -3477,7 +3487,7 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 	t2l := f == "textZuListe" || f == "text2list" // "abc-d" --> ["a","b","c","-","d"]
 	lenArgs := len(g1.Args)
 	// fmt.Println("b2t:", b2t, " t2b:", t2b, " e2t:", e2t, " t2e:", t2e)
-	if b2t || t2b || e2t || t2e || z2z || t2l {
+	if b2t || b2n || b2bz || t2b || e2t || t2e || z2z || t2l {
 		if !(lenArgs == 2 || ((e2t || t2e) && lenArgs == 3)) {
 			if len(g1.Args) < 2 {
 				// missing Arguments
@@ -3503,6 +3513,10 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 			if b2t {
 				// fmt.Println("#### Start buchstabiertZuText")
 				erg, ok = Spell2text(Eval(g1.Args[0]))
+			} else if b2n {
+				erg, ok = Spell2name(Eval(g1.Args[0]))
+			} else if b2bz {
+				erg, ok = Spell2namenumber(Eval(g1.Args[0]))
 			} else if t2b {
 				erg, ok = Text2spell(Eval(g1.Args[0]))
 			} else if t2l {
@@ -3527,7 +3541,7 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 		}
 
 		if v0 {
-			if b2t {
+			if b2t || b2n || b2bz {
 				erg, ok = Text2spell(Eval(g1.Args[1]))
 			} else if t2b {
 				erg, ok = Spell2text(Eval(g1.Args[1]))
@@ -3544,7 +3558,7 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 		}
 
 		// arg0 und arg1 sind Werte
-		if b2t {
+		if b2t || b2n || b2bz {
 			return env, CheckSpellAndText(Eval(g1.Args[0]), Eval(g1.Args[1]))
 		}
 		if t2b {
