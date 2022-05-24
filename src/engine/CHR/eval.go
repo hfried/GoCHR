@@ -709,7 +709,7 @@ var Spell2CharMap = map[string]rune{
 	"ah": 'A', "be": 'B', "zeh": 'C', "de": 'D', "eh": 'E',
 	"ef": 'F', "geh": 'G', "ha": 'H', "ie": 'I', "jot": 'J',
 	"ka": 'K', "el": 'L', "em": 'M', "en": 'N', "oh": 'O', "pe": 'P', "kuh": 'Q', "qu": 'Q',
-	"er": 'R', "es": 'S', "tee": 't', "uh": 'U', "Pfau": 'V', "weh": 'W',
+	"er": 'R', "es": 'S', "tee": 'T', "uh": 'U', "Pfau": 'V', "weh": 'W',
 	"ixs": 'x', "ysilon": 'y', "zet": 'Z'}
 
 var Spell2WordsMap = map[string]map[string]rune{
@@ -737,7 +737,7 @@ var Spell2CharNameMap = map[string]rune{
 	"ah": 'A', "be": 'B', "zeh": 'C', "de": 'D', "eh": 'E',
 	"ef": 'F', "geh": 'G', "ha": 'H', "ie": 'I', "jot": 'J',
 	"ka": 'K', "el": 'L', "em": 'M', "en": 'N', "oh": 'O', "pe": 'P', "kuh": 'Q', "qu": 'Q',
-	"er": 'R', "es": 'S', "tee": 't', "uh": 'U', "Pfau": 'V', "weh": 'W',
+	"er": 'R', "es": 'S', "tee": 'T', "uh": 'U', "Pfau": 'V', "weh": 'W',
 	"ixs": 'x', "ysilon": 'y', "zet": 'Z'}
 
 var Spell2CharNameNumberMap = map[string]rune{
@@ -1253,10 +1253,27 @@ var TLD1WordMap = map[string]string{
 }
 
 var TLD2WordsMap = map[string]map[string]string{
-	"d":    {"e": "de"},
-	"b":    {"e": "de"},
 	"plus": {"t": "posteo"},
 	"da":   {"a": "de"},
+	"a":    {"d": "ad", "l": "al", "t": "at", "x": "ax"},
+	"b":    {"a": "ba", "e": "be", "g": "bg", "y": "by"},
+	"c":    {"h": "ch", "y": "cy", "z": "cz"},
+	"d":    {"e": "de", "k": "dk"},
+	"e":    {"u": "eu", "e": "ee", "s": "es"},
+	"f":    {"i": "fi", "o": "fo", "r": "fr"},
+	"g":    {"b": "gb", "g": "gg", "i": "gi", "r": "gr"},
+	"h":    {"r": "hr", "u": "hu"},
+	"i":    {"e": "ie", "m": "im", "s": "is", "t": "it"},
+	"j":    {"e": "je"},
+	"l":    {"i": "li", "t": "lt", "u": "lu", "v": "lv"},
+	"m":    {"c": "mc", "d": "md", "e": "me", "k": "mk", "t": "mt"},
+	"n":    {"l": "nl", "o": "no"},
+	"p":    {"l": "pl", "t": "pt"},
+	"r":    {"o": "ro", "s": "rs"},
+	"s":    {"e": "se", "i": "si", "k": "sk", "m": "sm"},
+	"t":    {"r": "tr"},
+	"u":    {"a": "ua", "k": "uk"},
+	"v":    {"a": "va"},
 }
 
 var TLD3WordsMap = map[string]map[string]map[string]string{}
@@ -1285,7 +1302,7 @@ var Et = map[string]string{
 	"and": "@",
 	"der": "@",
 	"und": "@",
-	"f":   "@",
+	//	"f":   "@",
 }
 
 var Struct1Word = map[string]string{
@@ -1504,14 +1521,16 @@ func improveEmail(l List) (List, int) {
 				revErg = append(revErg, String(hn1))
 				idx--
 			}
-			_, ok := Et[sl[idx]]
-			if ok {
-				idx--
-			} else {
-				korrAnz++
+			if !etFound {
+				_, ok := Et[sl[idx]]
+				if ok {
+					idx--
+				} else {
+					korrAnz++
+				}
+				revErg = append(revErg, String("@"))
+				etFound = true
 			}
-			revErg = append(revErg, String("@"))
-			etFound = true
 		} else {
 			hn1, ok1 = EtHN1Word[sl[idx]]
 			ok2 = false
@@ -1540,15 +1559,17 @@ func improveEmail(l List) (List, int) {
 
 		idx1 := idx
 		idx2 := idx
-		for i := idx; i > 0; i-- {
-			_, ok = Et[sl[i]]
-			if ok {
-				idx1 = i + 1
-				idx2 = i - 1
-				etFound = true
-				break
-			}
+		if !etFound {
+			for i := idx; i > 0; i-- {
+				_, ok = Et[sl[i]]
+				if ok {
+					idx1 = i + 1
+					idx2 = i - 1
+					etFound = true
+					break
+				}
 
+			}
 		}
 		//		fmt.Println(" echtes @ etFound1:", etFound)
 		if !etFound {
