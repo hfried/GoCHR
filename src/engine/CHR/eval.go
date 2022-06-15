@@ -805,6 +805,7 @@ func Spell2text(spell Term) (Term, bool) {
 		var r rune
 		var first rune
 		var ok bool
+		doppel := false
 		for _, ele := range list {
 			if ele.Type() == StringType {
 				s := ele.(String)
@@ -854,7 +855,15 @@ func Spell2text(spell Term) (Term, bool) {
 									text += String("sch")
 									continue
 								}
+								if str == "doppel" {
+									doppel = true
+									continue
+								}
 								text += String(first) // main case: the first letter
+								if doppel {
+									text += String(first)
+									doppel = false
+								}
 							}
 						} else { // len(spell2Words1rest) > 0
 							// fmt.Println("in spell 2 Words 1 rest")
@@ -913,6 +922,7 @@ func Spell2name(spell Term) (Term, bool) {
 		var r rune
 		var first rune
 		var ok bool
+		doppel := false
 		for _, ele := range list {
 			if ele.Type() == StringType {
 				s := ele.(String)
@@ -953,7 +963,16 @@ func Spell2name(spell Term) (Term, bool) {
 							text += String("sch")
 							continue
 						}
+
+						if str == "doppel" {
+							doppel = true
+							continue
+						}
 						text += String(first) // main case: the first letter
+						if doppel {
+							text += String(first)
+							doppel = false
+						}
 					}
 				} else { // len(spell2Words1rest) > 0
 					// fmt.Println("in spell 2 Words 1 rest")
@@ -994,6 +1013,7 @@ func Spell2namenumber(spell Term) (Term, bool) {
 		list := spell.(List)
 		var text String
 		var first rune
+		doppel := false
 		for _, ele := range list {
 			if ele.Type() == StringType {
 				s := ele.(String)
@@ -1030,7 +1050,15 @@ func Spell2namenumber(spell Term) (Term, bool) {
 						continue
 					}
 				}
+				if str == "doppel" {
+					doppel = true
+					continue
+				}
 				text += String(first) // main case: the first letter
+				if doppel {
+					text += String(first)
+					doppel = false
+				}
 			} else if ele.Type() == CompoundType {
 				comp := ele.(Compound)
 				// fmt.Println("  ############# Functor: >", comp.Functor, "< #########")
