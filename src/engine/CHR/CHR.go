@@ -9,7 +9,7 @@
 package chr
 
 import (
-	// "fmt"
+	"fmt"
 	"math/big"
 
 	//	. "github.com/hfried/GoCHR/src/engine/parser"
@@ -646,7 +646,7 @@ func CHRsolver(rs *RuleStore, max int) {
 	}
 
 	if i == max {
-		TraceHeadln(0, 1, "!!! Time-out !!!")
+		TraceHeadln(0, 1, fmt.Sprintf("GoChr inference engine interrupted after executing the maximum (%d) number of rules", max))
 	}
 
 	reduceStore(rs)
