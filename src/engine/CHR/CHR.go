@@ -9,10 +9,12 @@
 package chr
 
 import (
-	// "fmt"
+	"fmt"
 	"math/big"
 
 	//	. "github.com/hfried/GoCHR/src/engine/parser"
+	"time"
+
 	. "github.com/hfried/GoCHR/src/engine/terms"
 )
 
@@ -3461,6 +3463,23 @@ func checkGuards(rs *RuleStore, r *chrRule, env Bindings) (ok bool) {
 	return true
 }
 
+const (
+	B2T         = iota + 1 // "buchstabiertZuText" || "spell2text"
+	B2N                    // "buchstabiertZuName"
+	B2BZ                   // "buchstabiertZuBuchstabenZahlen"
+	T2B                    // "textZuBuchstabiert" || "text2spell" // "abc-d" --> ["a","b","c","Bindestrich","d"]
+	E2T                    // "emailZuText" 2-3
+	T2E                    // "textZuEmail" 2-3
+	Z2Z                    // "ziffernZuZahl"
+	T2L                    // "textZuListe" || "text2list" // "abc-d" --> ["a","b","c","-","d"]
+	JETZT                  // jetzt(Zeit) - now(Time)
+	DATUM                  // datum(Zeit,Jahr, Monat, Tag, Wochentag) - date(Time, Year, Month, Day, Weekday)
+	UHRZEIT                // uhrzeit(Zeit, Stunde, Minute, Sekunde) - clock(Time, Hour, Min, Sec)
+	NANOSEC                // nanoSekunden(Zeit, Nanosekunden) - nanoSecond(Time, Integer)
+	PLUSDATUM              // plusDatum(Zeit, Jahr, Monat, Tag, NeueZeit) - addDate(Time, Year, Month, Day, NewTime)
+	PLUSUHRZEIT            // plusUhrzeit(Zeit, Stunde, Minute, Sekunde, NeueZeit) - addClock(Time, Hour, Min, Sec, NewTime)
+)
+
 // check a guard g with the binding env
 // if guards are true, return the new binding (if ':=', '=' or 'is' guard)
 func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok bool) {
@@ -3477,57 +3496,163 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 		return env2, true
 	}
 
-	b2t := f == "buchstabiertZuText" || f == "spell2text"
-	b2n := f == "buchstabiertZuName"
-	b2bz := f == "buchstabiertZuBuchstabenZahlen"
-	t2b := f == "textZuBuchstabiert" || f == "text2spell" // "abc-d" --> ["a","b","c","Bindestrich","d"]
-	e2t := f == "emailZuText"
-	t2e := f == "textZuEmail"
-	z2z := f == "ziffernZuZahl"
-	t2l := f == "textZuListe" || f == "text2list" // "abc-d" --> ["a","b","c","-","d"]
+	guard, argAnzMin, argAnzMax := 0, 0, 0
+	switch f {
+	case "buchstabiertZuText", "spell2text":
+		guard, argAnzMin, argAnzMax = B2T, 2, 2
+	case "buchstabiertZuName":
+		guard, argAnzMin, argAnzMax = B2N, 2, 2
+	case "buchstabiertZuBuchstabenZahlen":
+		guard, argAnzMin, argAnzMax = B2BZ, 2, 2
+	case "textZuBuchstabiert", "text2spell":
+		guard, argAnzMin, argAnzMax = T2B, 2, 2
+	case "emailZuText":
+		guard, argAnzMin, argAnzMax = E2T, 2, 3
+	case "textZuEmail": //  2-3 arguments
+		guard, argAnzMin, argAnzMax = T2E, 2, 3
+	case "ziffernZuZahl":
+		guard, argAnzMin, argAnzMax = Z2Z, 2, 2
+	case "textZuListe", "text2list": // "abc-d" --> ["a","b","c","-","d"]
+		guard, argAnzMin, argAnzMax = T2L, 2, 2
+	case "jetzt", "now": // jetzt(Zeit) - now(Time):
+		guard, argAnzMin, argAnzMax = JETZT, 1, 1
+	case "datum", "date": // datum(Zeit,Jahr, Monat, Tag, Wochentag) - date(Time, Year, Month, Day, Weekday):
+		guard, argAnzMin, argAnzMax = DATUM, 5, 5
+	case "uhrzeit", "clock": // uhrzeit(Zeit, Stunde, Minute, Sekunde) - clock(Time, Hour, Min, Sec):
+		guard, argAnzMin, argAnzMax = UHRZEIT, 4, 4
+	case "nanoSekunden", "nanoSecond": // nanoSekunden(Zeit, Nanosekunden) - nanoSecond(Time, Integer):
+		guard, argAnzMin, argAnzMax = NANOSEC, 2, 2
+	case "plusDatum", "addDate": // plusDatum(Zeit, Jahr, Monat, Tag, NeueZeit) - addDate(Time, Year, Month, Day, NewTime):
+		guard, argAnzMin, argAnzMax = PLUSDATUM, 5, 5
+	case "plusUhrzeit", "addClock": // plusUhrzeit(Zeit, Stunde, Minute, Sekunde, NeueZeit) - addClock(Time, Hour, Min, Sec, NewTime):
+		guard, argAnzMin, argAnzMax = PLUSUHRZEIT, 5, 5
+	}
+
 	lenArgs := len(g1.Args)
 	// fmt.Println("b2t:", b2t, " t2b:", t2b, " e2t:", e2t, " t2e:", t2e)
-	if b2t || b2n || b2bz || t2b || e2t || t2e || z2z || t2l {
-		if !(lenArgs == 2 || ((e2t || t2e) && lenArgs == 3)) {
-			if len(g1.Args) < 2 {
-				// missing Arguments
-				Trace(1, ", missing Arguments: ", g1)
-			} else {
-				// to many Arguments
-				Trace(1, ", (2) to many Arguments: ", g1, " (2) E2t: ", e2t, " lenArgs: ", lenArgs)
-			}
+	if guard != 0 {
+		if lenArgs < argAnzMin {
+			// missing Arguments
+			fmt.Println("#TIME# , missing ", argAnzMin-lenArgs, "argument(s): ", g1)
+			Trace(1, ", missing ", argAnzMin-lenArgs, "argument(s): ", g1)
 			return env, false
 		}
-		v0 := g1.Args[0].Type() == VariableType
-		v1 := g1.Args[1].Type() == VariableType
-		v2 := true
-		if lenArgs == 3 {
-			v2 = g1.Args[2].Type() == VariableType
-		}
-		if (v0 && v1) || !v2 {
+		if lenArgs > argAnzMax {
+			// to many Arguments
+			fmt.Println("#TIME# ", lenArgs-argAnzMax, " argument(s) to many : ", g1)
+			Trace(1, ", ", lenArgs-argAnzMax, " argument(s) to many : ", g1)
 			return env, false
 		}
+		// one argument - must be a variable
+		// two arguments - only one must be a variable
+
+		/*		v1 := g1.Args[1].Type() == VariableType
+				v2 := true
+				if lenArgs == 3 {
+					v2 = g1.Args[2].Type() == VariableType
+				}
+				if (v0 && v1) || !v2 {
+					return env, false
+				}
+		*/
 		var erg, erg2 Term
 		var korr int
-		if v1 {
-			if b2t {
+
+		if g1.Args[0].Type() == VariableType && (lenArgs <= 1 || g1.Args[1].Type() != VariableType) {
+			switch guard {
+			case B2T, B2N, B2BZ, Z2Z:
+				erg, ok = Text2spell(Eval(g1.Args[1]))
+			case T2B, T2L:
+				erg, ok = Spell2text(Eval(g1.Args[1]))
+			case E2T:
+				erg, _, ok = Text2email(Eval(g1.Args[1]))
+			case T2E:
+				erg, _, ok = Email2text(Eval(g1.Args[1]))
+			case JETZT:
+				d := time.Now()
+				erg = String("\"" + d.Format(time.RFC1123Z) + "\"")
+				ok = true
+			case DATUM, UHRZEIT, NANOSEC, PLUSDATUM, PLUSUHRZEIT:
+				return env, false
+			}
+			if !ok {
+				return env, ok
+			}
+			env2 = AddBinding(g1.Args[0].(Variable), erg, env)
+			return env2, ok
+		}
+		if lenArgs >= 2 && g1.Args[1].Type() == VariableType {
+			switch guard {
+			case B2T:
 				// fmt.Println("#### Start buchstabiertZuText")
 				erg, ok = Spell2text(Eval(g1.Args[0]))
-			} else if b2n {
+			case B2N:
 				erg, ok = Spell2name(Eval(g1.Args[0]))
-			} else if b2bz {
+			case B2BZ:
 				erg, ok = Spell2namenumber(Eval(g1.Args[0]))
-			} else if t2b {
+			case T2B:
 				erg, ok = Text2spell(Eval(g1.Args[0]))
-			} else if t2l {
-				erg, ok = Text2list(Eval(g1.Args[0]))
-			} else if e2t {
+			case E2T:
 				erg, korr, ok = Email2text(Eval(g1.Args[0]))
 				erg2 = Int(korr)
-			} else if t2e { // t2e
+			case T2E:
 				erg, erg2, ok = Text2email(Eval(g1.Args[0]))
-			} else { //z2z
+			case Z2Z:
 				erg, ok = ZiffernZuZahl(Eval(g1.Args[0]))
+			case T2L:
+				erg, ok = Text2list(Eval(g1.Args[0]))
+			// case JETZT: - hat nur ein Argument
+			case DATUM, UHRZEIT, NANOSEC:
+				if g1.Args[0].Type() != StringType {
+					fmt.Println("#TIME# Erste Argument kein Sting: ", f, "( ", g1.Args[0], "==", g1.Args[0].Type())
+					return env, false
+				}
+				s := string(g1.Args[0].(String))
+				s = s[1 : len(s)-1]
+				timeVal, err := time.Parse(time.RFC1123Z, s)
+				if err != nil {
+					fmt.Println("#TIME# Erste Argument kein Zeitstring: ", f, "( ", s)
+					return env, false
+				}
+				if guard == NANOSEC {
+					nano := timeVal.Nanosecond()
+					env2 = AddBinding(g1.Args[1].(Variable), Int(nano), env)
+					return env2, true
+				}
+				// 3-th argument must be a Variable
+				if g1.Args[2].Type() != VariableType {
+					fmt.Println("#TIME# Dritte Argument keine Variable: ", f, "( ", g1.Args[2])
+					return env, false
+				}
+				// 4-th argument must be a Variable
+				if g1.Args[3].Type() != VariableType {
+					fmt.Println("#TIME# Vierte Argument keine Variable: ", f, "( ", g1.Args[3])
+					return env, false
+				}
+				// 5-th argument, if exist, must be a variable
+				if lenArgs > 4 && g1.Args[4].Type() != VariableType {
+					fmt.Println("#TIME# Fünfte Argument keine Variable: ", f, "( ", g1.Args[3])
+					return env, false
+				}
+				switch guard {
+				case DATUM:
+					year, month, day := timeVal.Date()
+					weekday := timeVal.Weekday()
+					env2 = AddBinding(g1.Args[1].(Variable), Int(year), env)
+					env2 = AddBinding(g1.Args[2].(Variable), Int(month), env2)
+					env2 = AddBinding(g1.Args[3].(Variable), Int(day), env2)
+					env2 = AddBinding(g1.Args[4].(Variable), Int(weekday), env2)
+					return env2, true
+				case UHRZEIT:
+					st, mi, sec := timeVal.Clock()
+					env2 = AddBinding(g1.Args[1].(Variable), Int(st), env)
+					env2 = AddBinding(g1.Args[2].(Variable), Int(mi), env2)
+					env2 = AddBinding(g1.Args[3].(Variable), Int(sec), env2)
+					return env2, true
+				}
+			case PLUSDATUM, PLUSUHRZEIT:
+				fmt.Println("#TIME# Zweite Argument kein Int, eine Variable: ", f, "( ", g1.Args[1], g1.Args[1].Type())
+				return env, false
 			}
 
 			if !ok {
@@ -3540,29 +3665,50 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 			return env2, ok
 		}
 
-		if v0 {
-			if b2t || b2n || b2bz {
-				erg, ok = Text2spell(Eval(g1.Args[1]))
-			} else if t2b {
-				erg, ok = Spell2text(Eval(g1.Args[1]))
-			} else if e2t {
-				erg, _, ok = Text2email(Eval(g1.Args[1]))
-			} else { // t2e
-				erg, _, ok = Email2text(Eval(g1.Args[1]))
-			}
-			if !ok {
-				return env, ok
-			}
-			env2 = AddBinding(g1.Args[0].(Variable), erg, env)
-			return env2, ok
-		}
-
-		// arg0 und arg1 sind Werte
-		if b2t || b2n || b2bz {
+		switch guard {
+		case B2T, B2N, B2BZ: // arg0 und arg1 sind Werte
 			return env, CheckSpellAndText(Eval(g1.Args[0]), Eval(g1.Args[1]))
-		}
-		if t2b {
+		case T2B: // arg0 und arg1 sind Werte
 			return env, CheckSpellAndText(Eval(g1.Args[1]), Eval(g1.Args[0]))
+		case PLUSDATUM, PLUSUHRZEIT:
+			if g1.Args[0].Type() != StringType {
+				fmt.Println("#TIME# Erste Argument kein Sting: ", f, "( ", g1.Args[0], "==", g1.Args[0].Type())
+				return env, false
+			}
+			s := string(g1.Args[0].(String))
+			s = s[1 : len(s)-1]
+			timeVal, err := time.Parse(time.RFC1123Z, s)
+			if err != nil {
+				fmt.Println("#TIME# Erste Argument kein Zeitstring: ", f, "( ", g1.Args[0], "==", s)
+				return env, false
+			}
+			if g1.Args[1].Type() != IntType {
+				fmt.Println("#TIME# Zweite Argument keine ganze Zahl: ", f, "( ", g1.Args[1])
+				return env, false
+			}
+			if g1.Args[2].Type() != IntType {
+				fmt.Println("#TIME# Dritte Argument keine ganze Zahl: ", f, "( ", g1.Args[2])
+				return env, false
+			}
+			if g1.Args[3].Type() != IntType {
+				fmt.Println("#TIME# Vierte Argument keine ganze Zahl: ", f, "( ", g1.Args[3])
+				return env, false
+			}
+			int1 := int(g1.Args[1].(Int))
+			int2 := int(g1.Args[2].(Int))
+			int3 := int(g1.Args[3].(Int))
+			var newTime time.Time
+			switch guard {
+			case PLUSDATUM:
+				newTime = timeVal.AddDate(int1, int2, int3)
+			case PLUSUHRZEIT:
+				newTime = timeVal.Add(time.Hour*time.Duration(int1) + time.Minute*time.Duration(int2) + time.Second*time.Duration(int3))
+			}
+			erg = String("\"" + newTime.Format(time.RFC1123Z) + "\"")
+			env2 = AddBinding(g1.Args[4].(Variable), erg, env2)
+			return env2, true
+		default:
+			return env, false
 		}
 	}
 

@@ -702,6 +702,7 @@ var Spell2CharMap = map[string]rune{
 	"einschaltungszeichen": '^', "einschaltzeichen": '^', "häkchen": '^', "dach": '^',
 	"grad": '°', "gleichheitszeichen": '=',
 	"strichpunkt": ';', "nummernzeichen": '#', "doppelkreuz": '#',
+	"hashtag":     '#',
 	"leerzeichen": ' ', "space": ' ', "zwischenraum": ' ',
 	"leerstelle": ' ',
 	// fFlLmMnNrRsS

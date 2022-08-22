@@ -21,7 +21,7 @@ import (
 )
 
 // Precedence  Operator
-//     7 (coded as 0)  Variavle, Function, Konstant
+//     7 (coded as 0)  Variable, Function, Konstant
 //     6         unary operators +, -, !, ^, ¬ and in Go: *, &, <-
 //     5         *, /, %, div, mod, &, &^, <<, >>
 //     4        +, -, ^, or (the | will be used as list-operator, as in [a|B])
