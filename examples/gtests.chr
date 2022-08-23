@@ -1,0 +1,38 @@
+regel01 @ eingabe(A) ==> buchstabiertZuText(A,Text) | ausgabeB2T(Text).
+regel02 @ eingabe(A) ==> buchstabiertZuName(A,Name) | ausgabeB2N(Name).
+regel03 @ eingabe(A) <=> buchstabiertZuBuchstabenZahlen(A,BIC) | ausgabeB2BZ(BIC).
+
+
+eingabe(["a", "Komma", "b", "Punkt", "c", "Bindestrich", zahl(30,"dreissig")]).
+#result: ausgabeB2BZ("akbpcb30"), ausgabeB2T("a,b.c-30"), ausgabeB2N("akbpc-d").
+
+//ziffernZuZahl
+
+regel04 @ eingabe(A) ==> textZuBuchstabiert(A,B) | ausgabeT2B(B).
+regel05 @ eingabe(A) <=> textZuListe(A,L) | ausgabeT2L(L).
+
+eingabe("a,b.c-30").
+//#result: ausgabeT2B("a; Komma; b; Punkt; c; Bindestrich; Drei; Null"), ausgabeT2L(["a", ",", "b", ".", "c", "-", "3", "0"]).
+
+testZeit ==> jetzt(Zeit), datum(Zeit,Jahr, Monat, Tag, Wochentag) | datumHeute(Jahr, Monat, Tag, Wochentag).
+testZeit ==> jetzt(Zeit), uhrzeit(Zeit, Stunde, Minute, Sekunde), nanoSekunden(Zeit, Nanosekunden) | 
+	uhrzeitJetzt(Stunde, Minute, Sekunde), nanosekundenJetzt(Nanosekunden).
+testZeit ==> jetzt(Zeit), uhrzeit(Zeit, Stunde, Minute, Sekunde), nanoSekunden(Zeit, Nanosekunden2) | 
+	uhrzeitJetzt2(Stunde, Minute, Sekunde), nanosekundenJetzt2(Nanosekunden2).	
+testZeit ==> jetzt(Zeit), plusDatum(Zeit,0,0,1,Morgen) | morgen(Morgen).
+testZeit ==> jetzt(Zeit), plusDatum(Zeit,0,6,0,HalbeJahr) | halbeJahr(HalbeJahr).
+testZeit ==> jetzt(Zeit), plusDatum(Zeit,1,0,0, NaechsteJahr) | naechsteJahr(NaechsteJahr).
+	
+testZeit.
+ 
+
+//	E2T  // "emailZuText" 2-3
+//	T2E  // "textZuEmail" 2-3
+//	Z2Z  // "ziffernZuZahl"
+//	T2L  // "textZuListe" || "text2list" // "abc-d" --> ["a","b","c","-","d"]
+//	JETZT // jetzt(Zeit) - now(Time)
+//	DATUM // datum(Zeit,Jahr, Monat, Tag, Wochentag) - date(Time, Year, Month, Day, Weekday)
+//	UHRZEIT // uhrzeit(Zeit, Stunde, Minute, Sekunde) - clock(Time, Hour, Min, Sec)
+//	NANOSEC // nanoSekunden(Zeit, Nanosekunden) - nanoSecond(Time, Integer)
+//	PLUSDATUM // plusDatum(Zeit, Jahr, Monat, Tag, NeueZeit) - addDate(Time, Year, Month, Day, NewTime)
+//	PLUSUHRZEIT // plusUhrzeit(Zeit, Stunde, Minute, Sekunde, NeueZeit) - addClock(Time, Hour, Min, Sec, NewTime)

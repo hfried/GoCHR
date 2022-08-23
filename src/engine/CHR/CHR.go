@@ -3533,13 +3533,13 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 	if guard != 0 {
 		if lenArgs < argAnzMin {
 			// missing Arguments
-			fmt.Println("#TIME# , missing ", argAnzMin-lenArgs, "argument(s): ", g1)
+			// fmt.Println("#TIME# , missing ", argAnzMin-lenArgs, "argument(s): ", g1)
 			Trace(1, ", missing ", argAnzMin-lenArgs, "argument(s): ", g1)
 			return env, false
 		}
 		if lenArgs > argAnzMax {
 			// to many Arguments
-			fmt.Println("#TIME# ", lenArgs-argAnzMax, " argument(s) to many : ", g1)
+			// fmt.Println("#TIME# ", lenArgs-argAnzMax, " argument(s) to many : ", g1)
 			Trace(1, ", ", lenArgs-argAnzMax, " argument(s) to many : ", g1)
 			return env, false
 		}
@@ -3570,7 +3570,7 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 				erg, _, ok = Email2text(Eval(g1.Args[1]))
 			case JETZT:
 				d := time.Now()
-				erg = String("\"" + d.Format(time.RFC1123Z) + "\"")
+				erg = String("\"" + d.Format(time.RFC3339Nano) + "\"")
 				ok = true
 			case DATUM, UHRZEIT, NANOSEC, PLUSDATUM, PLUSUHRZEIT:
 				return env, false
@@ -3604,34 +3604,36 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 			// case JETZT: - hat nur ein Argument
 			case DATUM, UHRZEIT, NANOSEC:
 				if g1.Args[0].Type() != StringType {
-					fmt.Println("#TIME# Erste Argument kein Sting: ", f, "( ", g1.Args[0], "==", g1.Args[0].Type())
+					// fmt.Println("#TIME# Erste Argument kein Sting: ", f, "( ", g1.Args[0], "==", g1.Args[0].Type())
 					return env, false
 				}
 				s := string(g1.Args[0].(String))
 				s = s[1 : len(s)-1]
-				timeVal, err := time.Parse(time.RFC1123Z, s)
+				timeVal, err := time.Parse(time.RFC3339Nano, s)
 				if err != nil {
-					fmt.Println("#TIME# Erste Argument kein Zeitstring: ", f, "( ", s)
+					// fmt.Println("#TIME# Erste Argument kein Zeitstring: ", f, "( ", s)
 					return env, false
 				}
 				if guard == NANOSEC {
+					// RFC3339Nano
 					nano := timeVal.Nanosecond()
+					// nano := time.Now().Nanosecond()
 					env2 = AddBinding(g1.Args[1].(Variable), Int(nano), env)
 					return env2, true
 				}
 				// 3-th argument must be a Variable
 				if g1.Args[2].Type() != VariableType {
-					fmt.Println("#TIME# Dritte Argument keine Variable: ", f, "( ", g1.Args[2])
+					// fmt.Println("#TIME# Dritte Argument keine Variable: ", f, "( ", g1.Args[2])
 					return env, false
 				}
 				// 4-th argument must be a Variable
 				if g1.Args[3].Type() != VariableType {
-					fmt.Println("#TIME# Vierte Argument keine Variable: ", f, "( ", g1.Args[3])
+					// fmt.Println("#TIME# Vierte Argument keine Variable: ", f, "( ", g1.Args[3])
 					return env, false
 				}
 				// 5-th argument, if exist, must be a variable
 				if lenArgs > 4 && g1.Args[4].Type() != VariableType {
-					fmt.Println("#TIME# Fünfte Argument keine Variable: ", f, "( ", g1.Args[3])
+					// fmt.Println("#TIME# Fünfte Argument keine Variable: ", f, "( ", g1.Args[3])
 					return env, false
 				}
 				switch guard {
@@ -3651,7 +3653,7 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 					return env2, true
 				}
 			case PLUSDATUM, PLUSUHRZEIT:
-				fmt.Println("#TIME# Zweite Argument kein Int, eine Variable: ", f, "( ", g1.Args[1], g1.Args[1].Type())
+				// fmt.Println("#TIME# Zweite Argument kein Int, eine Variable: ", f, "( ", g1.Args[1], g1.Args[1].Type())
 				return env, false
 			}
 
@@ -3672,26 +3674,26 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 			return env, CheckSpellAndText(Eval(g1.Args[1]), Eval(g1.Args[0]))
 		case PLUSDATUM, PLUSUHRZEIT:
 			if g1.Args[0].Type() != StringType {
-				fmt.Println("#TIME# Erste Argument kein Sting: ", f, "( ", g1.Args[0], "==", g1.Args[0].Type())
+				// fmt.Println("#TIME# Erste Argument kein Sting: ", f, "( ", g1.Args[0], "==", g1.Args[0].Type())
 				return env, false
 			}
 			s := string(g1.Args[0].(String))
 			s = s[1 : len(s)-1]
-			timeVal, err := time.Parse(time.RFC1123Z, s)
+			timeVal, err := time.Parse(time.RFC3339Nano, s)
 			if err != nil {
-				fmt.Println("#TIME# Erste Argument kein Zeitstring: ", f, "( ", g1.Args[0], "==", s)
+				// fmt.Println("#TIME# Erste Argument kein Zeitstring: ", f, "( ", g1.Args[0], "==", s)
 				return env, false
 			}
 			if g1.Args[1].Type() != IntType {
-				fmt.Println("#TIME# Zweite Argument keine ganze Zahl: ", f, "( ", g1.Args[1])
+				// fmt.Println("#TIME# Zweite Argument keine ganze Zahl: ", f, "( ", g1.Args[1])
 				return env, false
 			}
 			if g1.Args[2].Type() != IntType {
-				fmt.Println("#TIME# Dritte Argument keine ganze Zahl: ", f, "( ", g1.Args[2])
+				// fmt.Println("#TIME# Dritte Argument keine ganze Zahl: ", f, "( ", g1.Args[2])
 				return env, false
 			}
 			if g1.Args[3].Type() != IntType {
-				fmt.Println("#TIME# Vierte Argument keine ganze Zahl: ", f, "( ", g1.Args[3])
+				// fmt.Println("#TIME# Vierte Argument keine ganze Zahl: ", f, "( ", g1.Args[3])
 				return env, false
 			}
 			int1 := int(g1.Args[1].(Int))
@@ -3704,7 +3706,7 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 			case PLUSUHRZEIT:
 				newTime = timeVal.Add(time.Hour*time.Duration(int1) + time.Minute*time.Duration(int2) + time.Second*time.Duration(int3))
 			}
-			erg = String("\"" + newTime.Format(time.RFC1123Z) + "\"")
+			erg = String("\"" + newTime.Format(time.RFC3339Nano) + "\"")
 			env2 = AddBinding(g1.Args[4].(Variable), erg, env2)
 			return env2, true
 		default:
