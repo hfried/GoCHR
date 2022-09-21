@@ -3478,6 +3478,7 @@ const (
 	NANOSEC                // nanoSekunden(Zeit, Nanosekunden) - nanoSecond(Time, Integer)
 	PLUSDATUM              // plusDatum(Zeit, Jahr, Monat, Tag, NeueZeit) - addDate(Time, Year, Month, Day, NewTime)
 	PLUSUHRZEIT            // plusUhrzeit(Zeit, Stunde, Minute, Sekunde, NeueZeit) - addClock(Time, Hour, Min, Sec, NewTime)
+	ZEIT                   // zeit(Jahr, Monat, Tag, Stunde, Minute, Sekunde, Zeit) - time(Year, Month, Day, Hour, Min, Sec, Time)
 )
 
 // check a guard g with the binding env
@@ -3526,6 +3527,8 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 		guard, argAnzMin, argAnzMax = PLUSDATUM, 5, 5
 	case "plusUhrzeit", "addClock": // plusUhrzeit(Zeit, Stunde, Minute, Sekunde, NeueZeit) - addClock(Time, Hour, Min, Sec, NewTime):
 		guard, argAnzMin, argAnzMax = PLUSUHRZEIT, 5, 5
+	case "zeit", "time": // zeit(Jahr, Monat, Tag, Stunde, Minute, Sekunde, Zeit) - time(Year, Month, Day, Hour, Min, Sec, Time):
+		guard, argAnzMin, argAnzMax = ZEIT, 7, 7
 	}
 
 	lenArgs := len(g1.Args)
@@ -3572,7 +3575,7 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 				d := time.Now()
 				erg = String("\"" + d.Format(time.RFC3339Nano) + "\"")
 				ok = true
-			case DATUM, UHRZEIT, NANOSEC, PLUSDATUM, PLUSUHRZEIT:
+			case DATUM, UHRZEIT, NANOSEC, PLUSDATUM, PLUSUHRZEIT, ZEIT:
 				return env, false
 			}
 			if !ok {
@@ -3603,11 +3606,12 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 				erg, ok = Text2list(Eval(g1.Args[0]))
 			// case JETZT: - hat nur ein Argument
 			case DATUM, UHRZEIT, NANOSEC:
-				if g1.Args[0].Type() != StringType {
+				arg0 := Eval(g1.Args[0])
+				if arg0.Type() != StringType {
 					// fmt.Println("#TIME# Erste Argument kein Sting: ", f, "( ", g1.Args[0], "==", g1.Args[0].Type())
 					return env, false
 				}
-				s := string(g1.Args[0].(String))
+				s := string(arg0.(String))
 				s = s[1 : len(s)-1]
 				timeVal, err := time.Parse(time.RFC3339Nano, s)
 				if err != nil {
@@ -3652,7 +3656,7 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 					env2 = AddBinding(g1.Args[3].(Variable), Int(sec), env2)
 					return env2, true
 				}
-			case PLUSDATUM, PLUSUHRZEIT:
+			case PLUSDATUM, PLUSUHRZEIT, ZEIT:
 				// fmt.Println("#TIME# Zweite Argument kein Int, eine Variable: ", f, "( ", g1.Args[1], g1.Args[1].Type())
 				return env, false
 			}
@@ -3673,7 +3677,8 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 		case T2B: // arg0 und arg1 sind Werte
 			return env, CheckSpellAndText(Eval(g1.Args[1]), Eval(g1.Args[0]))
 		case PLUSDATUM, PLUSUHRZEIT:
-			if g1.Args[0].Type() != StringType {
+			arg0 := Eval(g1.Args[0])
+			if arg0.Type() != StringType {
 				// fmt.Println("#TIME# Erste Argument kein Sting: ", f, "( ", g1.Args[0], "==", g1.Args[0].Type())
 				return env, false
 			}
@@ -3684,21 +3689,24 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 				// fmt.Println("#TIME# Erste Argument kein Zeitstring: ", f, "( ", g1.Args[0], "==", s)
 				return env, false
 			}
-			if g1.Args[1].Type() != IntType {
+			arg1 := Eval(g1.Args[1])
+			if arg1.Type() != IntType {
 				// fmt.Println("#TIME# Zweite Argument keine ganze Zahl: ", f, "( ", g1.Args[1])
 				return env, false
 			}
-			if g1.Args[2].Type() != IntType {
+			arg2 := Eval(g1.Args[2])
+			if arg2.Type() != IntType {
 				// fmt.Println("#TIME# Dritte Argument keine ganze Zahl: ", f, "( ", g1.Args[2])
 				return env, false
 			}
-			if g1.Args[3].Type() != IntType {
+			arg3 := Eval(g1.Args[3])
+			if arg3.Type() != IntType {
 				// fmt.Println("#TIME# Vierte Argument keine ganze Zahl: ", f, "( ", g1.Args[3])
 				return env, false
 			}
-			int1 := int(g1.Args[1].(Int))
-			int2 := int(g1.Args[2].(Int))
-			int3 := int(g1.Args[3].(Int))
+			int1 := int(arg1.(Int))
+			int2 := int(arg2.(Int))
+			int3 := int(arg3.(Int))
 			var newTime time.Time
 			switch guard {
 			case PLUSDATUM:
@@ -3707,7 +3715,54 @@ func checkGuard(rs *RuleStore, g *Compound, env Bindings) (env2 Bindings, ok boo
 				newTime = timeVal.Add(time.Hour*time.Duration(int1) + time.Minute*time.Duration(int2) + time.Second*time.Duration(int3))
 			}
 			erg = String("\"" + newTime.Format(time.RFC3339Nano) + "\"")
-			env2 = AddBinding(g1.Args[4].(Variable), erg, env2)
+			env2 = AddBinding(g1.Args[4].(Variable), erg, env)
+			return env2, true
+		case ZEIT:
+			arg0 := Eval(g1.Args[0])
+			if arg0.Type() != IntType {
+				// fmt.Println("#TIME# Erste Argument keine ganze Zahl: ", f, "( ", g1.Args[0])
+				return env, false
+			}
+			arg1 := Eval(g1.Args[1])
+			if arg1.Type() != IntType {
+				// fmt.Println("#TIME# Zweite Argument keine ganze Zahl: ", f, "( ", g1.Args[1])
+				return env, false
+			}
+			arg2 := Eval(g1.Args[2])
+			if arg2.Type() != IntType {
+				// fmt.Println("#TIME# Dritte Argument keine ganze Zahl: ", f, "( ", g1.Args[2])
+				return env, false
+			}
+			arg3 := Eval(g1.Args[3])
+			if arg3.Type() != IntType {
+				// fmt.Println("#TIME# Vierte Argument keine ganze Zahl: ", f, "( ", g1.Args[3])
+				return env, false
+			}
+			arg4 := Eval(g1.Args[4])
+			if arg4.Type() != IntType {
+				// fmt.Println("#TIME# Fuenfte Argument keine ganze Zahl: ", f, "( ", g1.Args[4])
+				return env, false
+			}
+			arg5 := Eval(g1.Args[5])
+			if arg5.Type() != IntType {
+				// fmt.Println("#TIME# Sechste Argument keine ganze Zahl: ", f, "( ", g1.Args[5])
+				return env, false
+			}
+			// Erg-Variable
+			arg6 := g1.Args[6]
+			if arg6.Type() != VariableType {
+				// fmt.Println("#TIME# Siebente Argument keine Variable: ", f, "( ", g1.Args[6])
+				return env, false
+			}
+			int0 := int(arg0.(Int))
+			int1 := int(arg1.(Int))
+			int2 := int(arg2.(Int))
+			int3 := int(arg3.(Int))
+			int4 := int(arg4.(Int))
+			int5 := int(arg5.(Int))
+			newTime := time.Date(int0, time.Month(int1), int2, int3, int4, int5, 0, time.Local)
+			erg = String("\"" + newTime.Format(time.RFC3339Nano) + "\"")
+			env2 = AddBinding(g1.Args[6].(Variable), erg, env)
 			return env2, true
 		default:
 			return env, false
